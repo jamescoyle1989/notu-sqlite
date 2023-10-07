@@ -1,0 +1,25 @@
+{
+  "name": "notu-sqlite",
+  "version": "0.1.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jamescoyle1989/notu-sqlite.git"
+  },
+  "author": "James Coyle",
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest",
+    "build": "tsc && vite build",
+    "publish": "tsc && vite build && npm publish"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vitest": "^0.34.6"
+  },
+  "dependencies": {
+    "better-sqlite3": "^8.7.0",
+    "notu": "^0.2.0"
+  }
+}
