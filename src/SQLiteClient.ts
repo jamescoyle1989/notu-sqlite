@@ -208,10 +208,10 @@ export default class SQLiteClient {
             }
             else {
                 if (tagIds.length == 0) {
-                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IS NULL) AS ${})`);
+                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IS NULL) AS ${1})`);
                 }
                 else {
-                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IN (${tagIds.join(',')})) AS ${})`);
+                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IN (${tagIds.join(',')})) AS ${1})`);
                 }
             }
         }
