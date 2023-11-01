@@ -1,38 +1,18 @@
-import BetterSqlite3 from 'better-sqlite3';
-import { parseQuery } from 'notu';
+import SQLiteConnection from './SQLiteConnection';
+import { Attr, Note, NoteAttr, NoteTag, Space, Tag } from 'notu';
 
 
 export default class SQLiteClient {
-    private _filename: string = '';
-    private _hasUpdatedSchema: boolean = false;
-
-    constructor(filename: string) {
-        this._filename = filename;
-    }
-
-    connect(): Promise<BetterSqlite3.Database> {
-        const db = new BetterSqlite3(this._filename, {});
-        db.pragma('journal_mode = WAL');
-        if (!this._hasUpdatedSchema)
-            this._updateSchema(db);
-        return Promise.resolve(db);
-    }
-
-    close(connection: BetterSqlite3.Database): Promise<void> {
-        connection.close();
-        return Promise.resolve();
-    }
-
-    private _updateSchema(db: BetterSqlite3.Database): void {
-        if (!db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Note'`).get()) {
-            db.prepare(
+    setupSchema(connection: SQLiteConnection): void {
+        if (!connection.getFirst(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Note';`)) {
+            connection.run(
                 `CREATE TABLE Space (
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL
                 )`
-            ).run();
+            );
             
-            db.prepare(
+            connection.run(
                 `CREATE TABLE Note (
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     spaceId INTEGER NOT NULL,
@@ -41,32 +21,32 @@ export default class SQLiteClient {
                     archived INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                 );`
-            ).run();
-            db.prepare(`CREATE INDEX Note_spaceId ON Note(spaceId);`).run();
-            db.prepare(`CREATE INDEX Note_date ON Note(date);`).run();
+            );
+            connection.run(`CREATE INDEX Note_spaceId ON Note(spaceId);`);
+            connection.run(`CREATE INDEX Note_date ON Note(date);`);
 
-            db.prepare(
+            connection.run(
                 `CREATE TABLE Tag (
                     id INTEGER NOT NULL,
                     name TEXT NOT NULL,
                     color INTEGER NULL,
                     FOREIGN KEY (id) REFERENCES Note(id) ON DELETE CASCADE
                 );`
-            ).run();
-            db.prepare(`CREATE INDEX Tag_id ON Tag(id);`).run();
+            );
+            connection.run(`CREATE INDEX Tag_id ON Tag(id);`);
 
-            db.prepare(
+            connection.run(
                 `CREATE TABLE NoteTag (
                     noteId INTEGER NOT NULL,
                     tagId INTEGER NOT NULL,
                     FOREIGN KEY (noteId) REFERENCES Note(id) ON DELETE CASCADE,
                     FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
                 );`
-            ).run();
-            db.prepare(`CREATE INDEX NoteTag_noteId ON NoteTag(noteId);`).run();
-            db.prepare(`CREATE INDEX NoteTag_tagId ON NoteTag(tagId);`).run();
+            );
+            connection.run(`CREATE INDEX NoteTag_noteId ON NoteTag(noteId);`);
+            connection.run(`CREATE INDEX NoteTag_tagId ON NoteTag(tagId);`);
 
-            db.prepare(
+            connection.run(
                 `CREATE TABLE Attr (
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     spaceId INTEGER NOT NULL,
@@ -74,10 +54,10 @@ export default class SQLiteClient {
                     type INTEGER NOT NULL,
                     FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                 );`
-            ).run();
-            db.prepare(`CREATE INDEX Attr_spaceId ON Attr(spaceId);`).run();
+            );
+            connection.run(`CREATE INDEX Attr_spaceId ON Attr(spaceId);`);
 
-            db.prepare(
+            connection.run(
                 `CREATE TABLE NoteAttr (
                     noteId INTEGER NOT NULL,
                     attrId INTEGER NOT NULL,
@@ -87,133 +67,195 @@ export default class SQLiteClient {
                     FOREIGN KEY (attrId) REFERENCES Attr(id) ON DELETE CASCADE,
                     FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
                 );`
-            ).run();
-            db.prepare(`CREATE INDEX NoteAttr_noteId ON NoteAttr(noteId);`).run();
-            db.prepare(`CREATE INDEX NoteAttr_attrId ON NoteAttr(attrId);`).run();
-            db.prepare(`CREATE INDEX NoteAttr_tagId ON NoteAttr(tagId);`).run();
+            );
+            connection.run(`CREATE INDEX NoteAttr_noteId ON NoteAttr(noteId);`);
+            connection.run(`CREATE INDEX NoteAttr_attrId ON NoteAttr(attrId);`);
+            connection.run(`CREATE INDEX NoteAttr_tagId ON NoteAttr(tagId);`);
         }
     }
 
 
-    private _spaceIdCache: Map<string, number> = new Map<string, number>();
-
-    private _updateSpaceIdCache(connection: BetterSqlite3.Database): void {
-        this._spaceIdCache.clear();
-        const queryResults = connection.prepare(`SELECT id, name FROM Space;`).all();
-        for (const result of queryResults)
-            this._spaceIdCache.set(result['name'], result['id']);
-    }
-
-    private _getSpaceId(connection: BetterSqlite3.Database, name: string): void {
-        let result = this._spaceIdCache.get(name);
-        if (result == undefined)
-            this._updateSpaceIdCache(connection);
-        result = this._spaceIdCache.get(name);
-        if (result == undefined)
-            throw Error(`Unrecognised '${name}' space.`);
-    }
-
-
-    private _tagIdCache: Map<string, number> = new Map<string, number>();
-    
-    private _updateTagIdCache(connection: BetterSqlite3.Database): void {
-        this._tagIdCache.clear();
-        const queryResults = connection.prepare(
-            `SELECT
-                id,
-                s.name + '.' + t.name AS name
-            FROM Tag t
-                INNER JOIN Note n ON t.id = n.id
-                INNER JOIN Space s ON n.spaceId = s.id;`
-        ).all();
-        for (const result of queryResults)
-            this._tagIdCache.set(result['name'], result['id']);
-    }
-
-    private _getTagId(connection: BetterSqlite3.Database, name: string, spaceName: string): void {
-        const fullName = spaceName + '.' + name;
-        let result = this._tagIdCache.get(fullName);
-        if (result == undefined)
-            this._updateTagIdCache(connection);
-        result = this._tagIdCache.get(fullName);
-        if (result == undefined)
-            throw Error(`Unrecognised '${name}' tag in '${spaceName}' space.`);
-    }
-
-
-    private _attrIdCache: Map<string, number> = new Map<string, number>();
-
-    private _updateAttrIdCache(connection: BetterSqlite3.Database): void {
-        this._attrIdCache.clear();
-        const queryResults = connection.prepare(
-            `SELECT
-                id,
-                s.name + '.' + a.name AS name
-            FROM Attr a
-                INNER JOIN Space s ON a.spaceId = s.id;`
-            ).all();
-        for (const result of queryResults)
-            this._attrIdCache.set(result['name'], result['id']);
-    }
-
-    private _getAttrId(connection: BetterSqlite3.Database, name: string, spaceName: string): void {
-        const fullName = spaceName + '.' + name;
-        let result = this._attrIdCache.get(fullName);
-        if (result == undefined)
-            this._updateAttrIdCache(connection);
-        result = this._attrIdCache.get(fullName);
-        if (result == undefined)
-            throw Error(`Unrecognised '${name}' attribute in '${spaceName}' space.`);
-    }
-
-
-    getNotes(connection: BetterSqlite3.Database, query: string, spaceName: string): void {
-        const parsedQuery = parseQuery(query);
-        query = `SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n`;
-        if (!!parsedQuery.where)
-            query += ` WHERE ${parsedQuery.where}`;
-        if (!!parsedQuery.order)
-            query += ` ORDER BY ${parsedQuery.order}`;
-        else
-            query += ` ORDER BY n.date`;
-
-        for (let i = 0; i < parsedQuery.tags.length; i++) {
-            const parsedTag = parsedQuery.tags[i];
-            const tagId = this._getTagId(connection, parsedTag.name, parsedTag.space ?? spaceName);
-            if (parsedTag.searchDepth == 0) {
-                query = query.replace(`{tag${i}}`, `n.id = ${tagId}`);
-            }
-            else if (parsedTag.searchDepth == 1 && parsedTag.strictSearchDepth && !parsedTag.includeOwner) {
-                query = query.replace(`{tag${i}}`, `EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = ${tagId})`);
-            }
-            else if (parsedTag.searchDepth == 1) {
-                query = query.replace(`{tag${i}}`, `(n.id = ${tagId} OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = ${tagId}))`);
-            }
-            else {
-                throw Error(`Sorry, that tag search feature hasn't been implemented yet.`);
-            }
+    saveSpace(space: Space, connection: SQLiteConnection): void {
+        if (space.isNew) {
+            space.id = connection.run(
+                'INSERT INTO Space (name) VALUES (?);',
+                space.name
+            ).lastInsertRowid as number;
+            space.clean();
         }
-
-        for (let i = 0; i < parsedQuery.attrs.length; i++) {
-            const parsedAttr = parsedQuery.tags[i];
-            const attrId = this._getAttrId(connection, parsedAttr.name, parsedAttr.space ?? spaceName);
-            const tagIds = parsedAttr.tagNameFilters.map(x => this._getTagId(connection, x.name, x.space ?? spaceName));
-            if (parsedAttr.exists) {
-                if (tagIds.length == 0) {
-                    query = query.replace(`{attr${i}}`, `EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IS NULL)`);
-                }
-                else {
-                    query = query.replace(`{attr${i}}`, `EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IN (${tagIds.join(',')}))`);
-                }
-            }
-            else {
-                if (tagIds.length == 0) {
-                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IS NULL) AS ${1})`);
-                }
-                else {
-                    query = query.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attrId} AND na.tagId IN (${tagIds.join(',')})) AS ${1})`);
-                }
-            }
+        else if (space.isDirty) {
+            connection.run(
+                'UPDATE Space SET name = ? WHERE id = ?;',
+                space.name, space.id
+            );
+            space.clean();
         }
+        else if (space.isDeleted) {
+            this._enforceForeignKeys(connection);
+            connection.run(
+                'DELETE FROM Space WHERE id = ?;',
+                space.id
+            );
+        }
+    }
+
+
+    saveAttr(attr: Attr, connection: SQLiteConnection): void {
+        if (attr.isNew) {
+            this._enforceForeignKeys(connection);
+            attr.id = connection.run(
+                'INSERT INTO Attr (spaceId, name, type) VALUES (?, ?, ?);',
+                attr.spaceId, attr.name, attr.type
+            ).lastInsertRowid as number;
+            attr.clean();
+        }
+        else if (attr.isDirty) {
+            this._enforceForeignKeys(connection);
+            connection.run(
+                'UPDATE Attr SET spaceId = ?, name = ?, type = ? WHERE id = ?;',
+                attr.spaceId, attr.name, attr.type, attr.id
+            );
+            attr.clean();
+        }
+        else if (attr.isDeleted) {
+            this._enforceForeignKeys(connection);
+            connection.run(
+                'DELETE FROM Attr WHERE id = ?;',
+                attr.id
+            );
+        }
+    }
+
+
+    saveNote(note: Note, connection: SQLiteConnection): void {
+        this._enforceForeignKeys(connection);
+        if (note.isNew) {
+            note.id = connection.run(
+                'INSERT INTO Note (date, text, archived, spaceId) VALUES (?, ?, ?, ?);',
+                Math.round(note.date.getTime() / 1000), note.text, note.archived ? 1 : 0, note.spaceId
+            ).lastInsertRowid as number;
+            note.clean();
+        }
+        else if (note.isDirty) {
+            connection.run(
+                'UPDATE Note SET date = ?, text = ?, archived = ?, spaceId = ? WHERE id = ?;',
+                Math.round(note.date.getTime() / 1000), note.text, note.archived ? 1 : 0, note.spaceId
+            );
+            note.clean();
+        }
+        else if (note.isDeleted) {
+            connection.run(
+                'DELETE FROM Note WHERE id = ?;',
+                note.id
+            );
+        }
+        if (!note.isDeleted) {
+            if (!!note.ownTag)
+                this._saveTag(note.ownTag, connection);
+            this._saveNoteTags(note.tags, connection);
+            this._saveNoteAttrs(note.attrs, connection);
+        }
+    }
+
+
+    private _saveTag(tag: Tag, connection: SQLiteConnection): void {
+        if (tag.isNew) {
+            connection.run(
+                'INSERT INTO Tag (id, name, color) VALUES (?, ?, ?);',
+                tag.id, tag.name, tag.getColorInt()
+            );
+            tag.clean();
+        }
+        else if (tag.isDirty) {
+            connection.run(
+                'UPDATE Tag SET name = ?, color = ? WHERE id = ?;',
+                tag.name, tag.getColorInt(), tag.id
+            );
+            tag.clean();
+        }
+        else if (tag.isDeleted) {
+            connection.run(
+                'DELETE Tag WHERE id = ?',
+                tag.id
+            );
+        }
+    }
+
+
+    //Important that all note tags passed in must belong to the same note
+    private _saveNoteTags(noteTags: Array<NoteTag>, connection: SQLiteConnection): void {
+        const inserts = noteTags.filter(x => x.isNew);
+        const deletes = noteTags.filter(x => x.isDeleted);
+
+        if (inserts.length > 0) {
+            let command = 'INSERT INTO NoteTag (noteId, tagId) VALUES ' + inserts.map(x => '(?, ?)').join(', ');
+            let args = [];
+            for (const insert of inserts) {
+                args.push(insert.noteId, insert.tagId);
+                insert.clean();
+            }
+            connection.run(command, ...args);
+        }
+        if (deletes.length > 0) {
+            let command = `DELETE FROM NoteTag WHERE noteId = ? AND tagId IN (${deletes.map(x => x.tagId).join(', ')})`;
+            let args = [deletes[0].noteId];
+            for (const del of deletes)
+                args.push(del.tagId);
+            connection.run(command, ...args);
+        }
+    }
+
+
+    private _saveNoteAttrs(noteAttrs: Array<NoteAttr>, connection: SQLiteConnection): void {
+        const inserts = noteAttrs.filter(x => x.isNew);
+        const updates = noteAttrs.filter(x => x.isDirty);
+        const deletes = noteAttrs.filter(x => x.isDeleted);
+
+        if (inserts.length > 0) {
+            let command = 'INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES ' + inserts.map(x => '(?, ?, ?, ?)').join(', ');
+            let args = [];
+            for (const insert of inserts) {
+                args.push(insert.noteId, insert.attrId, this._convertAttrValueToDb(insert), insert.tagId);
+                insert.clean();
+            }
+            connection.run(command, ...args);
+        }
+        for (const update of updates) {
+            connection.run(
+                'UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND tagId = ?;',
+                this._convertAttrValueToDb(update), update.noteId, update.attrId, update.tagId
+            );
+            update.clean();
+        }
+        if (deletes.length > 0) {
+            let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${deletes.map(x => '(attrId = ? AND tagId = ?)').join(' OR ')})`;
+            let args = [deletes[0].noteId];
+            for (const del of deletes)
+                args.push(del.attrId, del.tagId);
+            connection.run(command, ...args);
+        }
+    }
+
+
+    private _enforceForeignKeys(connection: SQLiteConnection): void {
+        connection.run('PRAGMA foreign_keys = ON');
+    }
+
+    private _convertAttrValueToDb(noteAttr: NoteAttr): any {
+        if (noteAttr.attr.isBoolean)
+            return noteAttr.value ? 1 : 0;
+        if (noteAttr.attr.isDate)
+            return Math.round(noteAttr.value.getTime() / 1000);
+        return noteAttr.value;
+    }
+
+    private _convertAttrValueFromDb(noteAttr: NoteAttr) {
+        if (noteAttr.attr.isBoolean)
+            return Number(noteAttr.value) > 0;
+        if (noteAttr.attr.isDate)
+            return new Date(Number(noteAttr.value) * 1000);
+        if (noteAttr.attr.isNumber)
+            return Number(noteAttr.value);
+        return noteAttr.value;
     }
 }

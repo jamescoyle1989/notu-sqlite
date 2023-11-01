@@ -12,8 +12,8 @@ export default class SQLiteConnection {
         this._internal.pragma('journal_mode = WAL');
     }
 
-    run(command: string, ...args: Array<any>): void {
-        this._internal.prepare(command).run(args);
+    run(command: string, ...args: Array<any>): BetterSqlite3.RunResult {
+        return this._internal.prepare(command).run(args);
     }
 
     getFirst(query: string, ...args: Array<any>): any {
