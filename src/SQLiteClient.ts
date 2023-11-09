@@ -2,6 +2,9 @@ import SQLiteConnection from './SQLiteConnection';
 import { Attr, Note, NoteAttr, NoteTag, Space, Tag } from 'notu';
 
 
+/**
+ * Provides methods for common functionality when interacting with the DB
+ */
 export default class SQLiteClient {
     setupSchema(connection: SQLiteConnection): void {
         if (!connection.getFirst(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Note';`)) {
