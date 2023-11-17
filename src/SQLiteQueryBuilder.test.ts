@@ -36,7 +36,7 @@ function mockCache(): SQLiteCache {
 test('buildNotesQuery correctly processes empty query', () => {
     const query = new ParsedQuery();
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n;');
 });
 
@@ -44,7 +44,7 @@ test('buildNotesQuery correctly processes query with order clause', () => {
     const query = new ParsedQuery();
     query.order = 'date';
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n ORDER BY date;');
 });
 
@@ -59,7 +59,7 @@ test('buildNotesQuery correctly processes query with self tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -80,7 +80,7 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -101,7 +101,7 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -122,7 +122,7 @@ test('buildNotesQuery throws error if trying to search for tags more than 1 rela
         return tag;
     })());
 
-    expect(() => buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any)).toThrowError();
+    expect(() => buildNotesQuery(query, 1, mockCache(), new MockConnection() as any)).toThrowError();
 });
 
 test('buildNotesQuery correctly processes query with attr exists condition', () => {
@@ -136,7 +136,7 @@ test('buildNotesQuery correctly processes query with attr exists condition', () 
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -155,7 +155,7 @@ test('buildNotesQuery correctly processes query with attr condition', () => {
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -179,7 +179,7 @@ test('buildNotesQuery correctly processes query with attr exists condition on sp
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
@@ -203,7 +203,7 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 'Space 1', mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +

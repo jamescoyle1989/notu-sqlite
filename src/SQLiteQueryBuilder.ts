@@ -4,13 +4,12 @@ import SQLiteConnection from './SQLiteConnection';
 
 export default function buildNotesQuery(
     parsedQuery: ParsedQuery,
-    spaceName: string,
+    spaceId: number,
     cache: SQLiteCache,
     connection: SQLiteConnection
 ): string {
     let output = 'SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n';
-    const spaceId = cache.getSpace(spaceName, connection).id;
-
+    
     if (!!parsedQuery.where)
         output += ` WHERE ${parsedQuery.where}`;
     if (!!parsedQuery.order)

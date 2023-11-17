@@ -4,12 +4,8 @@ import SQLiteConnection from './SQLiteConnection';
 
 export default class SQLiteCache {
     private _spaces: Array<Space> = [];
-    
-    getSpace(name: string, connection: SQLiteConnection): Space {
-        let result = this._spaces.find(x => x.name == name);
-        if (!!result)
-            return result;
 
+    private _populateSpaces(connection: SQLiteConnection): void {
         this._spaces = connection
             .getAll('SELECT id, name FROM Space;')
             .map(x => {
@@ -17,11 +13,25 @@ export default class SQLiteCache {
                 space.id = x.id;
                 return space.clean();
             });
+    }
+    
+    getSpace(name: string, connection: SQLiteConnection): Space {
+        let result = this._spaces.find(x => x.name == name);
+        if (!!result)
+            return result;
+
+        this._populateSpaces(connection);
         result = this._spaces.find(x => x.name == name);
         if (!!result)
             return result;
 
         throw Error(`Unrecognised '${name}' space`);
+    }
+
+    getSpaces(connection: SQLiteConnection): Array<Space> {
+        if (this._spaces.length == 0)
+            this._populateSpaces(connection);
+        return this._spaces;
     }
 
     invalidateSpaces(): void {
@@ -36,6 +46,30 @@ export default class SQLiteCache {
         if (!!result)
             return result;
 
+        this._repopulateTagCache(connection);
+        result = this._tags.find(x => x.spaceId == spaceId && x.ownTag.name == name);
+        if (!!result)
+            return result;
+        
+        throw Error(`Unrecognised '${name}' tag in space with ID ${spaceId}.`);
+    }
+
+    getTagById(id: number, connection: SQLiteConnection): Note {
+        if (id == null)
+            return null;
+        let result = this._tags.find(x => x.id == id);
+        if (!!result)
+            return result;
+
+        this._repopulateTagCache(connection);
+        result = this._tags.find(x => x.id == id);
+        if (!!result)
+            return result;
+
+        throw Error(`Unrecognised tag ID ${id}.`);
+    }
+
+    private _repopulateTagCache(connection: SQLiteConnection): void {
         this._tags = connection
             .getAll('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;')
             .map(x => {
@@ -47,11 +81,6 @@ export default class SQLiteCache {
                 note.setOwnTag(tag.clean());
                 return note.clean();
             });
-        result = this._tags.find(x => x.spaceId == spaceId && x.ownTag.name == name);
-        if (!!result)
-            return result;
-        
-        throw Error(`Unrecognised '${name}' tag in space with ID ${spaceId}.`);
     }
 
     invalidateTags(): void {
@@ -66,6 +95,36 @@ export default class SQLiteCache {
         if (!!result)
             return result;
 
+        this._repopulateAttrCache(connection);
+        result = this._attrs.find(x => x.spaceId == spaceId && x.name == name);
+        if (!!result)
+            return result;
+        
+        throw Error(`Unrecognised '${name}' attr in space with ID ${spaceId}.`);
+    }
+
+    getAttrs(connection: SQLiteConnection): Array<Attr> {
+        if (this._attrs.length == 0)
+            this._repopulateAttrCache(connection);
+        return this._attrs;
+    }
+
+    getAttrById(id: number, connection: SQLiteConnection): Attr {
+        if (id == null)
+            return null;
+        let result = this._attrs.find(x => x.id == id);
+        if (!!result)
+            return result;
+
+        this._repopulateTagCache(connection);
+        result = this._attrs.find(x => x.id == id);
+        if (!!result)
+            return result;
+
+        throw Error(`Unrecognised attr ID ${id}.`);
+    }
+
+    private _repopulateAttrCache(connection: SQLiteConnection): void {
         this._attrs = connection
             .getAll('SELECT id, name, spaceId, type FROM Attr;')
             .map(x => {
@@ -81,11 +140,6 @@ export default class SQLiteCache {
                 }
                 return attr.clean();
             });
-        result = this._attrs.find(x => x.spaceId == spaceId && x.name == name);
-        if (!!result)
-            return result;
-        
-        throw Error(`Unrecognised '${name}' attr in space with ID ${spaceId}.`);
     }
 
     invalidateAttrs(): void {

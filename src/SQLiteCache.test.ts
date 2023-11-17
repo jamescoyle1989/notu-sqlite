@@ -62,6 +62,16 @@ test('getSpace throws error if name doesnt exist', () => {
     expect(() => cache.getSpace('Bloop', connection as any)).toThrowError();
 });
 
+test('getSpaces returns all fetched spaces', () => {
+    const cache = new SQLiteCache();
+    const connection = new MockConnection();
+    connection.nextGetAllOutput = mockSpaceSetup();
+
+    const spaces = cache.getSpaces(connection as any);
+
+    expect(spaces.length).toBe(3);
+});
+
 
 test('getTag refreshes cache if name not found', () => {
     const cache = new SQLiteCache();
@@ -96,6 +106,17 @@ test('getTag throws error if name doesnt exist', () => {
     expect(() => cache.getTag('Bloop', 3, connection as any)).toThrowError();
 });
 
+test('getTagById returns correct result', () => {
+    const cache = new SQLiteCache();
+    const connection = new MockConnection();
+    connection.nextGetAllOutput = mockTagSetup();
+    cache.getTag('Live', 2, connection as any);
+
+    const result = cache.getTagById(4, connection as any);
+
+    expect(result.ownTag.name).toBe('Love');
+});
+
 
 test('getAttr refreshes cache if name not found', () => {
     const cache = new SQLiteCache();
@@ -128,4 +149,15 @@ test('getAttr throws error if name doesnt exist', () => {
     connection.nextGetAllOutput = mockAttrSetup();
 
     expect(() => cache.getAttr('Bloop', 3, connection as any)).toThrowError();
+});
+
+test('getAttrById returns correct result', () => {
+    const cache = new SQLiteCache();
+    const connection = new MockConnection();
+    connection.nextGetAllOutput = mockAttrSetup();
+    cache.getAttr('Live', 1, connection as any);
+
+    const result = cache.getAttrById(3, connection as any);
+
+    expect(result.name).toBe('Love');
 });

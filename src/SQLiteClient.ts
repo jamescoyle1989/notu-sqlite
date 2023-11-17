@@ -251,14 +251,4 @@ export default class SQLiteClient {
             return Math.round(noteAttr.value.getTime() / 1000);
         return noteAttr.value;
     }
-
-    private _convertAttrValueFromDb(noteAttr: NoteAttr) {
-        if (noteAttr.attr.isBoolean)
-            return Number(noteAttr.value) > 0;
-        if (noteAttr.attr.isDate)
-            return new Date(Number(noteAttr.value) * 1000);
-        if (noteAttr.attr.isNumber)
-            return Number(noteAttr.value);
-        return noteAttr.value;
-    }
 }
