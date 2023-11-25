@@ -139,10 +139,8 @@ test('saveAttr updates dirty attr', () => {
 test('saveAttr deletes attr if flagged for deletion', () => {
     const client = new SQLiteClient();
     const connection = new MockConnection();
-    const attr = new Attr().asNumber().delete();
+    const attr = new Attr('test').in(10).asNumber().delete();
     attr.id = 45;
-    attr.name = 'test';
-    attr.spaceId = 10;
 
     client.saveAttr(attr, connection as any);
 
@@ -156,9 +154,7 @@ test('saveNote inserts new note', () => {
     const client = new SQLiteClient();
     const connection = new MockConnection();
     connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
-    const note = new Note();
-    note.text = 'test';
-    note.spaceId = 78;
+    const note = new Note('test').in(78);
 
     client.saveNote(note, connection as any);
 
@@ -172,10 +168,8 @@ test('saveNote inserts new note', () => {
 test('saveNote updates dirty attr', () => {
     const client = new SQLiteClient();
     const connection = new MockConnection();
-    const note = new Note().dirty();
+    const note = new Note('test').in(78).dirty();
     note.id = 9;
-    note.text = 'test';
-    note.spaceId = 78;
 
     client.saveNote(note, connection as any);
 
@@ -188,10 +182,8 @@ test('saveNote updates dirty attr', () => {
 test('saveNote deletes attr if flagged for deletion', () => {
     const client = new SQLiteClient();
     const connection = new MockConnection();
-    const note = new Note().delete();
+    const note = new Note('test').in(78).delete();
     note.id = 9;
-    note.text = 'test';
-    note.spaceId = 78;
 
     client.saveNote(note, connection as any);
 

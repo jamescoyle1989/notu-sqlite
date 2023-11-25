@@ -69,11 +69,8 @@ export default class NotuServer {
             const notes = connection
                 .getAll(notesSQL)
                 .map(x => {
-                    const note = new Note();
+                    const note = new Note(x.text).at(x.date).in(x.spaceId);
                     note.id = x.id;
-                    note.spaceId = x.spaceId;
-                    note.text = x.text;
-                    note.date = x.date;
                     note.archived = x.archived;
                     notesMap.set(note.id, note);
                     return note;

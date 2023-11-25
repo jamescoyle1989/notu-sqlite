@@ -27,6 +27,6 @@
   },
   "dependencies": {
     "better-sqlite3": "^8.7.0",
-    "notu": "^0.2.10"
+    "notu": "^0.3.0"
   }
 }

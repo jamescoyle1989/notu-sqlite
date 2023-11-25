@@ -73,9 +73,8 @@ export default class SQLiteCache {
         this._tags = connection
             .getAll('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;')
             .map(x => {
-                const note = new Note();
+                const note = new Note().in(x.spaceId);
                 note.id = x.id;
-                note.spaceId = x.spaceId;
                 const tag = new Tag(x.name);
                 tag.id = x.id;
                 note.setOwnTag(tag.clean());
@@ -128,10 +127,8 @@ export default class SQLiteCache {
         this._attrs = connection
             .getAll('SELECT id, name, spaceId, type FROM Attr;')
             .map(x => {
-                const attr = new Attr();
+                const attr = new Attr(x.name).in(x.spaceId);
                 attr.id = x.id;
-                attr.name = x.name;
-                attr.spaceId = x.spaceId;
                 switch (x.type) {
                     case 1: attr.type = 'TEXT'; break;
                     case 2: attr.type = 'NUMBER'; break;
