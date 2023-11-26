@@ -65,39 +65,7 @@ export default class NotuServer {
         const connection = this._connectionFactory();
         try {
             const notesSQL = buildNotesQuery(parsedQuery, spaceId, this._cache, connection);
-            const notesMap = new Map<number, Note>();
-            const notes = connection
-                .getAll(notesSQL)
-                .map(x => {
-                    const note = new Note(x.text).at(x.date).in(x.spaceId);
-                    note.id = x.id;
-                    note.archived = x.archived;
-                    notesMap.set(note.id, note);
-                    return note;
-                });
-            
-            const noteTagsSQL = `SELECT noteId, tagId FROM NoteTag WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
-            connection.getAll(noteTagsSQL)
-                .map(x => {
-                    const note = notesMap.get(x.noteId);
-                    const tag = this._cache.getTagById(x.tagId, connection);
-                    return note.addTag(tag.ownTag);
-                });
-
-            const noteAttrsSQL = `SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
-            connection.getAll(noteAttrsSQL)
-                .map(x => {
-                    const note = notesMap.get(x.noteId);
-                    const attr = this._cache.getAttrById(x.attrId, connection);
-                    const tag = this._cache.getTagById(x.tagId, connection);
-                    const noteAttr = note.addAttr(attr);
-                    if (tag != null)
-                        noteAttr.tag = tag.ownTag;
-                    noteAttr.value = this._convertAttrValueFromDb(attr, x.value);
-                    return noteAttr;
-                });
-
-            return notes;
+            return this._client.getNotes(notesSQL, connection, this._cache);
         }
         finally {
             connection.close();
@@ -112,16 +80,5 @@ export default class NotuServer {
         finally {
             connection.close();
         }
-    }
-
-
-    private _convertAttrValueFromDb(attr: Attr, value: string) {
-        if (attr.isBoolean)
-            return Number(value) > 0;
-        if (attr.isDate)
-            return new Date(Number(value) * 1000);
-        if (attr.isNumber)
-            return Number(value);
-        return value;
     }
 }

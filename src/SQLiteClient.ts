@@ -1,3 +1,4 @@
+import SQLiteCache from './SQLiteCache';
 import SQLiteConnection from './SQLiteConnection';
 import { Attr, Note, NoteAttr, NoteTag, Space, Tag } from 'notu';
 
@@ -99,6 +100,48 @@ export default class SQLiteClient {
                 'DELETE FROM Space WHERE id = ?;',
                 space.id
             );
+        }
+    }
+
+
+    getNotes(notesQuery: string, connection: SQLiteConnection, cache: SQLiteCache): Array<Note> {
+        try {
+            const notesMap = new Map<number, Note>();
+            const notes = connection
+                .getAll(notesQuery)
+                .map(x => {
+                    const note = new Note(x.text).at(x.date).in(x.spaceId);
+                    note.id = x.id;
+                    note.archived = x.archived;
+                    notesMap.set(note.id, note);
+                    return note;
+                });
+            
+            const noteTagsSQL = `SELECT noteId, tagId FROM NoteTag WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
+            connection.getAll(noteTagsSQL)
+                .map(x => {
+                    const note = notesMap.get(x.noteId);
+                    const tag = cache.getTagById(x.tagId, connection);
+                    return note.addTag(tag.ownTag);
+                });
+
+            const noteAttrsSQL = `SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
+            connection.getAll(noteAttrsSQL)
+                .map(x => {
+                    const note = notesMap.get(x.noteId);
+                    const attr = cache.getAttrById(x.attrId, connection);
+                    const tag = cache.getTagById(x.tagId, connection);
+                    const noteAttr = note.addAttr(attr);
+                    if (tag != null)
+                        noteAttr.tag = tag.ownTag;
+                    noteAttr.value = this._convertAttrValueFromDb(attr, x.value);
+                    return noteAttr;
+                });
+
+            return notes;
+        }
+        finally {
+            connection.close();
         }
     }
 
@@ -250,5 +293,15 @@ export default class SQLiteClient {
         if (noteAttr.attr.isDate)
             return Math.round(noteAttr.value.getTime() / 1000);
         return noteAttr.value;
+    }
+
+    private _convertAttrValueFromDb(attr: Attr, value: string) {
+        if (attr.isBoolean)
+            return Number(value) > 0;
+        if (attr.isDate)
+            return new Date(Number(value) * 1000);
+        if (attr.isNumber)
+            return Number(value);
+        return value;
     }
 }
