@@ -39,22 +39,22 @@ export default class SQLiteCache {
     }
 
 
-    private _tags: Array<Note> = [];
+    private _tags: Array<Tag> = [];
 
-    getTag(name: string, spaceId: number, connection: SQLiteConnection): Note {
-        let result = this._tags.find(x => x.spaceId == spaceId && x.ownTag.name == name);
+    getTag(name: string, spaceId: number, connection: SQLiteConnection): Tag {
+        let result = this._tags.find(x => x.spaceId == spaceId && x.name == name);
         if (!!result)
             return result;
 
         this._repopulateTagCache(connection);
-        result = this._tags.find(x => x.spaceId == spaceId && x.ownTag.name == name);
+        result = this._tags.find(x => x.spaceId == spaceId && x.name == name);
         if (!!result)
             return result;
         
         throw Error(`Unrecognised '${name}' tag in space with ID ${spaceId}.`);
     }
 
-    getTagById(id: number, connection: SQLiteConnection): Note {
+    getTagById(id: number, connection: SQLiteConnection): Tag {
         if (id == null)
             return null;
         let result = this._tags.find(x => x.id == id);
@@ -73,12 +73,9 @@ export default class SQLiteCache {
         this._tags = connection
             .getAll('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;')
             .map(x => {
-                const note = new Note().in(x.spaceId);
-                note.id = x.id;
-                const tag = new Tag(x.name);
+                const tag = new Tag(x.name, x.spaceId);
                 tag.id = x.id;
-                note.setOwnTag(tag.clean());
-                return note.clean();
+                return tag.clean();
             });
     }
 

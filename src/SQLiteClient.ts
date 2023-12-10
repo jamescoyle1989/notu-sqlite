@@ -122,7 +122,7 @@ export default class SQLiteClient {
                 .map(x => {
                     const note = notesMap.get(x.noteId);
                     const tag = cache.getTagById(x.tagId, connection);
-                    return note.addTag(tag.ownTag);
+                    return note.addTag(tag);
                 });
 
             const noteAttrsSQL = `SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
@@ -133,7 +133,7 @@ export default class SQLiteClient {
                     const tag = cache.getTagById(x.tagId, connection);
                     const noteAttr = note.addAttr(attr);
                     if (tag != null)
-                        noteAttr.tag = tag.ownTag;
+                        noteAttr.tag = tag;
                     noteAttr.value = this._convertAttrValueFromDb(attr, x.value);
                     return noteAttr;
                 });

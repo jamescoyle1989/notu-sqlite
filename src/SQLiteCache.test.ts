@@ -114,7 +114,7 @@ test('getTagById returns correct result', () => {
 
     const result = cache.getTagById(4, connection as any);
 
-    expect(result.ownTag.name).toBe('Love');
+    expect(result.name).toBe('Love');
 });
 
 
