@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import SQLiteCache from './SQLiteCache';
+import SQLiteCache from '../src/SQLiteCache';
 import { MockConnection } from './SQLiteClient.test';
 
 

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import SQLiteClient from './SQLiteClient';
+import SQLiteClient from '../src/SQLiteClient';
 import BetterSqlite3 from 'better-sqlite3';
 import { Space, Attr, Note } from 'notu';
 
@@ -8,9 +8,9 @@ export class MockConnection {
     history: Array<{type: string, command: string, args: Array<any>}> = [];
     isOpen: boolean = true;
 
-    nextRunOutput: BetterSqlite3.RunResult = null;
+    nextRunOutput: BetterSqlite3.RunResult;
     nextGetFirstOutput: any = null;
-    nextGetAllOutput: Array<any> = null;
+    nextGetAllOutput: Array<any>;
 
     onGetAll: () => void;
     
