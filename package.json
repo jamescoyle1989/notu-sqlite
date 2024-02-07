@@ -1,8 +1,8 @@
 {
   "name": "notu-sqlite",
-  "version": "0.1.1",
-  "main": "dist/notu-sqlite.mjs",
-  "unpkg": "dist/notu-sqlite.mjs",
+  "version": "0.1.2",
+  "main": "dist/notu-sqlite.js",
+  "unpkg": "dist/notu-sqlite.js",
   "types": "dist/types/index.d.ts",
   "files": [
     "/dist"
@@ -15,15 +15,17 @@
   "license": "MIT",
   "scripts": {
     "test": "vitest",
-    "build": "tsc && vite build",
-    "publish": "tsc && vite build && npm publish"
+    "build": "webpack",
+    "publish": "webpack && npm publish"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.6",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vite-plugin-dts": "^3.6.3",
-    "vitest": "^0.34.6"
+    "vitest": "^0.34.6",
+    "webpack": "^5.90.1",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "better-sqlite3": "^8.7.0",
