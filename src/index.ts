@@ -5,7 +5,7 @@ import SQLiteCache from './SQLiteCache';
 import SQLiteClient from './SQLiteClient';
 import SQLiteConnection from './SQLiteConnection';
 
-module.exports = {
+export {
     NotuServer,
     SecureNotuServer,
     Security,

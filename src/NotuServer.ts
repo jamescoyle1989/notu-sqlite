@@ -20,6 +20,16 @@ export default class NotuServer {
         this._cache = cache;
     }
 
+    setupSchema(): void {
+        const connection = this._connectionFactory();
+        try {
+            this._client.setupSchema(connection);
+        }
+        finally {
+            connection.close();
+        }
+    }
+
     getSpaces(): Array<Space> {
         const connection = this._connectionFactory();
         try {

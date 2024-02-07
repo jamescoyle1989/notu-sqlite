@@ -7,8 +7,8 @@ import BetterSqlite3 from 'better-sqlite3';
 export default class SQLiteConnection {
     private _internal: BetterSqlite3.Database;
     
-    constructor(filename: string) {
-        this._internal = new BetterSqlite3(filename, {});
+    constructor(db: BetterSqlite3.Database) {
+        this._internal = db;
         this._internal.pragma('journal_mode = WAL');
     }
 

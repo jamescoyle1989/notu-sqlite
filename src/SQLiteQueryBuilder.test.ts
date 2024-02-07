@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { ParsedAttr, ParsedQuery, ParsedTag } from 'notu';
-import buildNotesQuery from '../src/SQLiteQueryBuilder';
-import SQLiteCache from '../src/SQLiteCache';
+import buildNotesQuery from './SQLiteQueryBuilder';
+import SQLiteCache from './SQLiteCache';
 import { MockConnection } from './SQLiteClient.test';
 
 
