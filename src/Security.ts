@@ -1,7 +1,7 @@
 import * as jose from 'jose'
 
 
-export default class Security {
+export class Security {
     private _userValidator: ((username: string, password: string) => boolean);
 
     private _secret: Uint8Array;

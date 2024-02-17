@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import NotuServer from '../src/NotuServer';
+import { NotuServer } from '../src/NotuServer';
 import { MockConnection } from './SQLiteClient.test';
-import SQLiteCache from '../src/SQLiteCache';
-import SQLiteClient from '../src/SQLiteClient';
+import { SQLiteCache } from '../src/SQLiteCache';
+import { SQLiteClient } from '../src/SQLiteClient';
 
 
 function mockSpaceSetup(): Array<any> {

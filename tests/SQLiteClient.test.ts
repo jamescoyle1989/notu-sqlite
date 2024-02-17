@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import SQLiteClient from '../src/SQLiteClient';
+import { SQLiteClient } from '../src/SQLiteClient';
 import BetterSqlite3 from 'better-sqlite3';
 import { Space, Attr, Note } from 'notu';
 

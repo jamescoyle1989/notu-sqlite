@@ -1,9 +1,9 @@
-import NotuServer from './NotuServer';
-import Security from './Security';
+import { NotuServer } from './NotuServer';
+import { Security } from './Security';
 import { Note, Space, Attr } from 'notu';
 
 
-export default class SecureNotuServer {
+export class SecureNotuServer {
     private _notuServer: NotuServer;
     private _security: Security;
 

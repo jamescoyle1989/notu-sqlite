@@ -1,8 +1,8 @@
-import { Attr, Note, Space, Tag } from 'notu';
-import SQLiteConnection from './SQLiteConnection';
+import { Attr, Space, Tag } from 'notu';
+import { SQLiteConnection } from './SQLiteConnection';
 
 
-export default class SQLiteCache {
+export class SQLiteCache {
     private _spaces: Array<Space> = [];
 
     private _populateSpaces(connection: SQLiteConnection): void {

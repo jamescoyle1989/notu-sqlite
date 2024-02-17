@@ -4,7 +4,7 @@ import BetterSqlite3 from 'better-sqlite3';
 /**
  * Provides thin wrapper around BetterSqlite3.Database
  */
-export default class SQLiteConnection {
+export class SQLiteConnection {
     private _internal: BetterSqlite3.Database;
     
     constructor(db: BetterSqlite3.Database) {

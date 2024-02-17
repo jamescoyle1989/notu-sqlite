@@ -1,11 +1,11 @@
 import { Note, Space, Attr, parseQuery } from 'notu';
-import SQLiteCache from './SQLiteCache';
-import SQLiteConnection from './SQLiteConnection';
-import SQLiteClient from './SQLiteClient';
-import buildNotesQuery from './SQLiteQueryBuilder';
+import { SQLiteCache } from './SQLiteCache';
+import { SQLiteConnection } from './SQLiteConnection';
+import { SQLiteClient } from './SQLiteClient';
+import { buildNotesQuery } from './SQLiteQueryBuilder';
 
 
-export default class NotuServer {
+export class NotuServer {
     private _connectionFactory: () => SQLiteConnection;
     private _client: SQLiteClient;
     private _cache: SQLiteCache;

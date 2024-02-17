@@ -1,11 +1,13 @@
 {
   "name": "notu-sqlite",
-  "version": "0.1.4",
-  "main": "dist/notu-sqlite.mjs",
-  "unpkg": "dist/notu-sqlite.mjs",
+  "version": "0.1.5",
+  "main": "dist/cjs/notu-sqlite.js",
+  "module": "dist/esm/notu-sqlite.js",
+  "unpkg": "dist/cjs/notu-sqlite.js",
   "types": "dist/types/index.d.ts",
+  "type": "module",
   "files": [
-    "/dist"
+    "dist"
   ],
   "repository": {
     "type": "git",
@@ -15,20 +17,29 @@
   "license": "MIT",
   "scripts": {
     "test": "vitest",
-    "build": "vite build",
-    "publish": "vite build && npm publish"
+    "build": "rollup -c && node finalBuildCleanup.js",
+    "publish": "npm run build && npm publish"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
     "@types/better-sqlite3": "^7.6.6",
-    "ts-loader": "^9.5.1",
+    "better-sqlite3": "^9.4.1",
+    "notu": "^0.4.0",
+    "picomatch": "^4.0.1",
+    "rollup": "^3.29.4",
+    "rollup-plugin-dts": "^6.1.0",
+    "tslib": "^2.6.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vite-plugin-dts": "^3.7.2",
     "vitest": "^0.34.6"
   },
   "dependencies": {
+    "jose": "^5.1.3"
+  },
+  "peerDependencies": {
     "better-sqlite3": "^8.7.0",
-    "jose": "^5.1.3",
     "notu": "^0.4.0"
   }
 }

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import Security from '../src/Security';
+import { Security } from '../src/Security';
 
 
 test('sign accepts a username & password, returning a JWT token', async () => {

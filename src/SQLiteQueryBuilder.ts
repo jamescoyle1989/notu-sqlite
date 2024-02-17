@@ -1,8 +1,8 @@
 import { Attr, ParsedQuery } from 'notu';
-import SQLiteCache from './SQLiteCache';
-import SQLiteConnection from './SQLiteConnection';
+import { SQLiteCache } from './SQLiteCache';
+import { SQLiteConnection } from './SQLiteConnection';
 
-export default function buildNotesQuery(
+export function buildNotesQuery(
     parsedQuery: ParsedQuery,
     spaceId: number,
     cache: SQLiteCache,
