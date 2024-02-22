@@ -12,6 +12,14 @@ export class SecureNotuServer {
         this._security = security;
     }
 
+    setupSchema(): void {
+        this._notuServer.setupSchema();
+    }
+
+    async login(username: string, password: string): Promise<string> {
+        return await this._security.sign(username, password);
+    }
+
     async getSpaces(token: string): Promise<Array<Space>> {
         await this._security.verify(token);
         return this._notuServer.getSpaces();
