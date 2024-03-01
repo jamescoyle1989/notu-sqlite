@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { SQLiteClient } from '../src/SQLiteClient';
 import BetterSqlite3 from 'better-sqlite3';
 import { Space, Attr, Note } from 'notu';
+import { SQLiteCache } from '../src';
 
 
 export class MockConnection {
@@ -190,4 +191,23 @@ test('saveNote deletes attr if flagged for deletion', () => {
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('DELETE FROM Note WHERE id = ?;');
     expect(connection.history.length).toBe(2);
+});
+
+test('getNotes fetches notes in correct format', () => {
+    const client = new SQLiteClient();
+    const connection = new MockConnection();
+    const cache = new SQLiteCache();
+    connection.nextGetAllOutput = [
+        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979, archived: 0}
+    ];
+    connection.onGetAll = () => connection.nextGetAllOutput = [];
+
+    const notes = client.getNotes('', connection as any, cache);
+
+    expect(notes.length).toBe(1);
+    expect(notes[0].id).toBe(5);
+    expect(notes[0].spaceId).toBe(1);
+    expect(notes[0].text).toBe('Test test');
+    expect(notes[0].date.getTime()).toBe(11708573979000);
+    expect(notes[0].archived).toBe(false);
 });

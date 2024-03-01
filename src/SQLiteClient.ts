@@ -110,9 +110,10 @@ export class SQLiteClient {
             const notes = connection
                 .getAll(notesQuery)
                 .map(x => {
-                    const note = new Note(x.text).at(x.date).in(x.spaceId);
+                    const note = new Note(x.text).in(x.spaceId)
+                        .at(new Date(x.date * 1000));
                     note.id = x.id;
-                    note.archived = x.archived;
+                    note.archived = x.archived > 0;
                     notesMap.set(note.id, note);
                     return note;
                 });
