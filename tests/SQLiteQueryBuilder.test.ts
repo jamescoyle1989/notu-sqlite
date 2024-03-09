@@ -131,7 +131,6 @@ test('buildNotesQuery correctly processes query with attr exists condition', () 
     query.attrs.push((() => {
         const attr = new ParsedAttr();
         attr.name = 'Attr 1';
-        attr.space = null;
         attr.exists = true;
         return attr;
     })());
@@ -150,7 +149,6 @@ test('buildNotesQuery correctly processes query with attr condition', () => {
     query.attrs.push((() => {
         const attr = new ParsedAttr();
         attr.name = 'Attr 1';
-        attr.space = null;
         attr.exists = false;
         return attr;
     })());
@@ -169,7 +167,6 @@ test('buildNotesQuery correctly processes query with attr exists condition on sp
     query.attrs.push((() => {
         const attr = new ParsedAttr();
         attr.name = 'Attr 1';
-        attr.space = null;
         attr.exists = true;
         attr.tagNameFilters = [(() => {
             const tag = new ParsedTag();
@@ -193,7 +190,6 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
     query.attrs.push((() => {
         const attr = new ParsedAttr();
         attr.name = 'Attr 1';
-        attr.space = null;
         attr.exists = false;
         attr.tagNameFilters = [(() => {
             const tag = new ParsedTag();

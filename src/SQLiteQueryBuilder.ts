@@ -37,11 +37,7 @@ export function buildNotesQuery(
 
     for (let i = 0; i < parsedQuery.attrs.length; i++) {
         const parsedAttr = parsedQuery.attrs[i];
-        const attr = cache.getAttr(
-            parsedAttr.name,
-            !!parsedAttr.space ? cache.getSpace(parsedAttr.space, connection).id : spaceId,
-            connection
-        );
+        const attr = cache.getAttr(parsedAttr.name, spaceId, connection);
         let tagIds = [];
         if (!!parsedAttr.tagNameFilters) {
             tagIds = parsedAttr.tagNameFilters
