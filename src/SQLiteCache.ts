@@ -1,5 +1,6 @@
 import { Attr, Space, Tag } from 'notu';
 import { SQLiteConnection } from './SQLiteConnection';
+import { mapAttrTypeFromDb } from './SQLMappings';
 
 
 export class SQLiteCache {
@@ -126,12 +127,7 @@ export class SQLiteCache {
             .map(x => {
                 const attr = new Attr(x.name).in(x.spaceId);
                 attr.id = x.id;
-                switch (x.type) {
-                    case 1: attr.type = 'TEXT'; break;
-                    case 2: attr.type = 'NUMBER'; break;
-                    case 3: attr.type = 'BOOLEAN'; break;
-                    case 4: attr.type = 'DATE'; break;
-                }
+                attr.type = mapAttrTypeFromDb(x.type);
                 return attr.clean();
             });
     }

@@ -1,3 +1,4 @@
+import { mapAttrTypeToDb } from './SQLMappings';
 import { SQLiteCache } from './SQLiteCache';
 import { SQLiteConnection } from './SQLiteConnection';
 import { Attr, Note, NoteAttr, NoteTag, Space, Tag } from 'notu';
@@ -34,6 +35,7 @@ export class SQLiteClient {
                     id INTEGER NOT NULL,
                     name TEXT NOT NULL,
                     color INTEGER NULL,
+                    PRIMARY KEY (id),
                     FOREIGN KEY (id) REFERENCES Note(id) ON DELETE CASCADE
                 );`
             );
@@ -43,6 +45,7 @@ export class SQLiteClient {
                 `CREATE TABLE NoteTag (
                     noteId INTEGER NOT NULL,
                     tagId INTEGER NOT NULL,
+                    PRIMARY KEY (noteId, tagId),
                     FOREIGN KEY (noteId) REFERENCES Note(id) ON DELETE CASCADE,
                     FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
                 );`
@@ -67,6 +70,7 @@ export class SQLiteClient {
                     attrId INTEGER NOT NULL,
                     value TEXT NOT NULL,
                     tagId INTEGER NULL,
+                    PRIMARY KEY (noteId, attrId, tagId),
                     FOREIGN KEY (noteId) REFERENCES Note(id) ON DELETE CASCADE,
                     FOREIGN KEY (attrId) REFERENCES Attr(id) ON DELETE CASCADE,
                     FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
@@ -152,7 +156,7 @@ export class SQLiteClient {
             this._enforceForeignKeys(connection);
             attr.id = connection.run(
                 'INSERT INTO Attr (spaceId, name, type) VALUES (?, ?, ?);',
-                attr.spaceId, attr.name, attr.type
+                attr.spaceId, attr.name, mapAttrTypeToDb(attr.type)
             ).lastInsertRowid as number;
             attr.clean();
         }
@@ -160,7 +164,7 @@ export class SQLiteClient {
             this._enforceForeignKeys(connection);
             connection.run(
                 'UPDATE Attr SET spaceId = ?, name = ?, type = ? WHERE id = ?;',
-                attr.spaceId, attr.name, attr.type, attr.id
+                attr.spaceId, attr.name, mapAttrTypeToDb(attr.type), attr.id
             );
             attr.clean();
         }
