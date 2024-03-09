@@ -13,7 +13,7 @@ export class MockConnection {
     nextGetFirstOutput: any = null;
     nextGetAllOutput: Array<any>;
 
-    onGetAll: () => void;
+    onGetAll: (query: string) => void;
     
     run(command: string, ...args: Array<any>): BetterSqlite3.RunResult {
         this.history.push({type: 'run', command, args});
@@ -29,7 +29,7 @@ export class MockConnection {
         this.history.push({type: 'getAll', command: query, args});
         const output = this.nextGetAllOutput;
         if (!!this.onGetAll)
-            this.onGetAll();
+            this.onGetAll(query);
         return output;
     }
 

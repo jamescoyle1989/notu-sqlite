@@ -40,6 +40,6 @@
   },
   "peerDependencies": {
     "better-sqlite3": "^8.7.0",
-    "notu": "^0.4.1"
+    "notu": "^0.4.6"
   }
 }

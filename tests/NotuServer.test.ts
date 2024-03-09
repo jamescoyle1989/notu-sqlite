@@ -3,6 +3,7 @@ import { NotuServer } from '../src/NotuServer';
 import { MockConnection } from './SQLiteClient.test';
 import { SQLiteCache } from '../src/SQLiteCache';
 import { SQLiteClient } from '../src/SQLiteClient';
+import { Attr, Note, Space } from 'notu';
 
 
 function mockSpaceSetup(): Array<any> {
@@ -92,4 +93,135 @@ test('getNotes properly queries the database', () => {
     expect(connection.history[0].command).toBe(`SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n WHERE EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1);`);
     expect(connection.history[1].command).toBe(`SELECT noteId, tagId FROM NoteTag WHERE noteId IN (1);`);
     expect(connection.history[2].command).toBe(`SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (1);`);
+});
+
+
+test('saveAttr invalidates the existing attr cache', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    let cacheRefetchCount = 0;
+    connection.onGetAll = () => cacheRefetchCount++;
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+
+    expect(cacheRefetchCount).toBe(0);
+    server.saveAttr(new Attr());
+    expect(cacheRefetchCount).toBe(0);
+    server.getAttrs();
+    expect(cacheRefetchCount).toBe(1);
+});
+
+
+test('saveSpace invalidates the existing space cache', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    let cacheRefetchCount = 0;
+    connection.onGetAll = () => cacheRefetchCount++;
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+
+    expect(cacheRefetchCount).toBe(0);
+    server.saveSpace(new Space());
+    expect(cacheRefetchCount).toBe(0);
+    server.getSpaces();
+    expect(cacheRefetchCount).toBe(1);
+});
+
+
+test('saveSpace invalidates the existing space cache', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    let cacheRefetchCount = 0;
+    connection.onGetAll = () => cacheRefetchCount++;
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+
+    expect(cacheRefetchCount).toBe(0);
+    server.saveSpace(new Space());
+    expect(cacheRefetchCount).toBe(0);
+    server.getSpaces();
+    expect(cacheRefetchCount).toBe(1);
+});
+
+
+test('saveNote doesnt invalidate the existing tag cache if note never had its own tag', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+
+    expect(cache['_tags'].length).toBeGreaterThan(0);
+    server.saveNote(new Note('Test'));
+    expect(cache['_tags'].length).toBeGreaterThan(0);
+});
+
+
+test('saveNote invalidates cache if note has own tag', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+
+    expect(cache['_tags'].length).toBeGreaterThan(0);
+    server.saveNote(new Note('Test').setOwnTag('My Tag'));
+    expect(cache['_tags'].length).toBe(0);
+});
+
+
+test('saveNote invalidates cache if note used to have own tag', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+    const note = new Note('Test').setOwnTag('My Tag').clean();
+    note.id = 123;
+    note.ownTag.clean();
+    note.removeOwnTag();
+
+    expect(cache['_tags'].length).toBeGreaterThan(0);
+    server.saveNote(note);
+    expect(cache['_tags'].length).toBe(0);
+});
+
+
+test('saveNote doesnt invalidate cache if notes own tag didnt change', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+    const note = new Note('Test').setOwnTag('My Tag').clean();
+    note.id = 123;
+    note.ownTag.clean();
+
+    expect(cache['_tags'].length).toBeGreaterThan(0);
+    server.saveNote(note);
+    expect(cache['_tags'].length).toBeGreaterThan(0);
 });

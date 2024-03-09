@@ -44,6 +44,7 @@ export class NotuServer {
         const connection = this._connectionFactory();
         try {
             this._client.saveSpace(space, connection);
+            this._cache.invalidateSpaces();
         }
         finally {
             connection.close();
@@ -64,6 +65,7 @@ export class NotuServer {
         const connection = this._connectionFactory();
         try {
             this._client.saveAttr(attr, connection);
+            this._cache.invalidateAttrs();
         }
         finally {
             connection.close();
@@ -85,7 +87,10 @@ export class NotuServer {
     saveNote(note: Note): void {
         const connection = this._connectionFactory();
         try {
+            const invalidateTags = !!note.ownTag && !note.ownTag.isClean;
             this._client.saveNote(note, connection);
+            if (invalidateTags)
+                this._cache.invalidateTags();
         }
         finally {
             connection.close();
