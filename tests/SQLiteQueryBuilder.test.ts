@@ -37,7 +37,7 @@ test('buildNotesQuery correctly processes empty query', () => {
     const query = new ParsedQuery();
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n;');
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n WHERE n.spaceId = 1;');
 });
 
 test('buildNotesQuery correctly processes query with order clause', () => {
@@ -45,7 +45,7 @@ test('buildNotesQuery correctly processes query with order clause', () => {
     query.order = 'date';
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n ORDER BY date;');
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n WHERE n.spaceId = 1 ORDER BY date;');
 });
 
 test('buildNotesQuery correctly processes query with self tag filter', () => {
@@ -63,7 +63,7 @@ test('buildNotesQuery correctly processes query with self tag filter', () => {
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            'WHERE n.id = 3;'
+            'WHERE n.spaceId = 1 AND (n.id = 3);'
         );
 });
 
@@ -84,7 +84,7 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            'WHERE EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3);'
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3));'
         );
 });
 
@@ -105,7 +105,7 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            'WHERE (n.id = 3 OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3));'
+            'WHERE n.spaceId = 1 AND ((n.id = 3 OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3)));'
         );
 });
 
@@ -139,7 +139,7 @@ test('buildNotesQuery correctly processes query with attr exists condition', () 
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            'WHERE EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5);'
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5));'
         );
 });
 
@@ -157,7 +157,7 @@ test('buildNotesQuery correctly processes query with attr condition', () => {
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            `WHERE CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5) AS TEXT) = 'hello';`
+            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5) AS TEXT) = 'hello');`
         );
 });
 
@@ -180,7 +180,7 @@ test('buildNotesQuery correctly processes query with attr exists condition on sp
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            'WHERE EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3));'
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)));'
         );
 });
 
@@ -203,6 +203,6 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
         .toBe(
             'SELECT n.id, n.spaceId, n.text, n.date, n.archived ' +
             'FROM Note n ' +
-            `WHERE CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)) AS TEXT) = 'hello';`
+            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)) AS TEXT) = 'hello');`
         );
 });

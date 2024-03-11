@@ -90,7 +90,7 @@ test('getNotes properly queries the database', () => {
     expect(notes[0].tags.length).toBe(1);
     expect(notes[0].attrs.length).toBe(1);
     expect(connection.history.length).toBe(3);
-    expect(connection.history[0].command).toBe(`SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n WHERE EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1);`);
+    expect(connection.history[0].command).toBe(`SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1));`);
     expect(connection.history[1].command).toBe(`SELECT noteId, tagId FROM NoteTag WHERE noteId IN (1);`);
     expect(connection.history[2].command).toBe(`SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (1);`);
 });

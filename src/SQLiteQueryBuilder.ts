@@ -10,8 +10,9 @@ export function buildNotesQuery(
 ): string {
     let output = 'SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n';
     
+    output += ` WHERE n.spaceId = ${spaceId}`
     if (!!parsedQuery.where)
-        output += ` WHERE ${parsedQuery.where}`;
+        output += ` AND (${parsedQuery.where})`;
     if (!!parsedQuery.order)
         output += ` ORDER BY ${parsedQuery.order}`;
 
