@@ -51,10 +51,11 @@ export class NotuServer {
         }
     }
 
-    getAttrs(): Array<Attr> {
+    getAttrs(spaceId: number = 0): Array<Attr> {
         const connection = this._connectionFactory();
         try {
-            return this._cache.getAttrs(connection);
+            return this._cache.getAttrs(connection)
+                .filter(x => spaceId <= 0 || x.spaceId == spaceId);
         }
         finally {
             connection.close();

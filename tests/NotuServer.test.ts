@@ -246,3 +246,34 @@ test('saveNote uses cache to populate attributes before saving', () => {
     expect(note.attrs[0].attr.name).toBe('Live');
     expect(note.attrs[0].tag).toBeNull();
 });
+
+
+test('getAttrs by default returns all attrs', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache  
+    );
+
+    const attrs = server.getAttrs();
+
+    expect(attrs.length).toBe(3);
+});
+
+
+test('getAttrs can filter by spaceId', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache  
+    );
+
+    const attrs = server.getAttrs(2);
+
+    expect(attrs.length).toBe(1);
+    expect(attrs[0].id).toBe(3);
+});

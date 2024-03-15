@@ -30,9 +30,9 @@ export class SecureNotuServer {
         this._notuServer.saveSpace(space);
     }
 
-    async getAttrs(token: string): Promise<Array<Attr>> {
+    async getAttrs(token: string, spaceId: number = 0): Promise<Array<Attr>> {
         await this._security.verify(token);
-        return this._notuServer.getAttrs();
+        return this._notuServer.getAttrs(spaceId);
     }
 
     async saveAttr(token: string, attr: Attr): Promise<void> {
