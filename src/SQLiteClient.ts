@@ -186,6 +186,10 @@ export class SQLiteClient {
                 Math.round(note.date.getTime() / 1000), note.text, note.archived ? 1 : 0, note.spaceId
             ).lastInsertRowid as number;
             note.clean();
+            for (const nt of note.tags)
+                nt.noteId = note.id;
+            for (const na of note.attrs)
+                na.noteId = note.id;
         }
         else if (note.isDirty) {
             connection.run(

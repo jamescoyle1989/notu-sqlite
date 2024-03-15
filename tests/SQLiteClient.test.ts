@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { SQLiteClient } from '../src/SQLiteClient';
 import BetterSqlite3 from 'better-sqlite3';
-import { Space, Attr, Note } from 'notu';
+import { Space, Attr, Note, Tag } from 'notu';
 import { SQLiteCache } from '../src';
 
 
@@ -210,4 +210,29 @@ test('getNotes fetches notes in correct format', () => {
     expect(notes[0].text).toBe('Test test');
     expect(notes[0].date.getTime()).toBe(11708573979000);
     expect(notes[0].archived).toBe(false);
+});
+
+test('saveNote for new note sets noteId on tags & attrs', () => {
+    const client = new SQLiteClient();
+    const connection = new MockConnection();
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
+    const note = new Note('test').in(78);
+    const tag = new Tag('My Tag', 78).clean();
+    tag.id = 123;
+    const attr = new Attr('My Attr').in(78).asNumber().clean();
+    attr.id = 234;
+    note.addTag(tag);
+    note.addAttr(attr).withValue(987);
+
+    client.saveNote(note, connection as any);
+
+    expect(note.id).toBe(345);
+    expect(note.isClean).toBe(true);
+    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, archived, spaceId) VALUES (?, ?, ?, ?);');
+    expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId) VALUES (?, ?)');
+    expect(connection.history[2].args[0]).toBe(345);
+    expect(connection.history[3].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
+    expect(connection.history[3].args[0]).toBe(345);
+    expect(connection.history.length).toBe(4);
 });
