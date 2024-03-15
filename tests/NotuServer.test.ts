@@ -3,7 +3,7 @@ import { NotuServer } from '../src/NotuServer';
 import { MockConnection } from './SQLiteClient.test';
 import { SQLiteCache } from '../src/SQLiteCache';
 import { SQLiteClient } from '../src/SQLiteClient';
-import { Attr, Note, Space } from 'notu';
+import { Attr, Note, NoteAttr, NoteTag, Space } from 'notu';
 
 
 function mockSpaceSetup(): Array<any> {
@@ -224,4 +224,25 @@ test('saveNote doesnt invalidate cache if notes own tag didnt change', () => {
     expect(cache['_tags'].length).toBeGreaterThan(0);
     server.saveNote(note);
     expect(cache['_tags'].length).toBeGreaterThan(0);
+});
+
+
+test('saveNote uses cache to populate attributes before saving', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache  
+    );
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
+    const note = new Note('I am a test');
+    note.tags.push(new NoteTag(0, 3));
+    note.attrs.push(new NoteAttr(0, 1).onTag(3));
+
+    server.saveNote(note);
+
+    expect(note.tags[0].tag).toBeNull();
+    expect(note.attrs[0].attr.name).toBe('Live');
+    expect(note.attrs[0].tag).toBeNull();
 });
