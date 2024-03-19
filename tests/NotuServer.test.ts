@@ -277,3 +277,62 @@ test('getAttrs can filter by spaceId', () => {
     expect(attrs.length).toBe(1);
     expect(attrs[0].id).toBe(3);
 });
+
+
+test('getSpaces should return clean spaces', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+
+    const spaces = server.getSpaces();
+
+    for (const space of spaces)
+        expect(space.isClean).toBe(true);
+});
+
+
+test('getAttrs should return clean attrs', () => {
+    const connection = new MockConnection();
+    const cache = setupMockCache(connection);
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+
+    const attrs = server.getAttrs();
+
+    for (const attr of attrs)
+        expect(attr.isClean).toBe(true);
+});
+
+
+test('getNotes should return clean notes', () => {
+    const cache = setupMockCache(new MockConnection());
+    const connection = new MockConnection();
+    const server = new NotuServer(
+        () => connection as any,
+        new SQLiteClient(),
+        cache
+    );
+    connection.nextGetAllOutput = [
+        {id: 1, spaceId: 1, text: 'hello', date: new Date(2023, 10, 13), archived: false}
+    ];
+    connection.onGetAll = () => {
+        connection.nextGetAllOutput = [{noteId: 1, tagId: 2}];
+
+        connection.onGetAll = () => {
+            connection.nextGetAllOutput = [{noteId: 1, attrId: 1, tagId: null, value: 'test'}]
+        };
+    };
+
+    const notes = server.getNotes('#Live', 1);
+
+    expect(notes[0].isClean).toBe(true);
+    expect(notes[0].tags[0].isClean).toBe(true);
+    expect(notes[0].attrs[0].isClean).toBe(true);
+});
