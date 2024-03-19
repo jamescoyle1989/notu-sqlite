@@ -113,7 +113,7 @@ export class SQLiteCache {
         if (!!result)
             return result;
 
-        this._repopulateTagCache(connection);
+        this._repopulateAttrCache(connection);
         result = this._attrs.find(x => x.id == id);
         if (!!result)
             return result;

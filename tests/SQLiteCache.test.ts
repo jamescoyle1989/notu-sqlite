@@ -161,3 +161,13 @@ test('getAttrById returns correct result', () => {
 
     expect(result.name).toBe('Love');
 });
+
+test('getAttrById causes attr cache to be reloaded if id not found initially', () => {
+    const cache = new SQLiteCache();
+    const connection = new MockConnection();
+    connection.nextGetAllOutput = mockAttrSetup();
+
+    const result = cache.getAttrById(3, connection as any);
+
+    expect(result.name).toBe('Love');
+});
