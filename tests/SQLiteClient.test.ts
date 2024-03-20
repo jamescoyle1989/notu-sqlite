@@ -162,7 +162,7 @@ test('saveNote inserts new note', () => {
     expect(note.id).toBe(345);
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
     expect(connection.history.length).toBe(2);
 });
 
@@ -228,7 +228,7 @@ test('saveNote for new note sets noteId on tags & attrs', () => {
     expect(note.id).toBe(345);
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
     expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId) VALUES (?, ?)');
     expect(connection.history[2].args[0]).toBe(345);
     expect(connection.history[3].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');

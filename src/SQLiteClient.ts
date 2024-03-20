@@ -182,7 +182,7 @@ export class SQLiteClient {
         this._enforceForeignKeys(connection);
         if (note.isNew) {
             note.id = connection.run(
-                'INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);',
+                'INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);',
                 Math.round(note.date.getTime() / 1000), note.text, note.spaceId
             ).lastInsertRowid as number;
             note.clean();
