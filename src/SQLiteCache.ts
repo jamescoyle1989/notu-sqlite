@@ -55,6 +55,12 @@ export class SQLiteCache {
         throw Error(`Unrecognised '${name}' tag in space with ID ${spaceId}.`);
     }
 
+    getTags(connection: SQLiteConnection): Array<Tag> {
+        if (this._tags.length == 0)
+            this._repopulateTagCache(connection);
+        return this._tags;
+    }
+
     getTagById(id: number, connection: SQLiteConnection): Tag {
         if (id == null)
             return null;

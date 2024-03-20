@@ -1,4 +1,4 @@
-import { Note, Space, Attr, parseQuery } from 'notu';
+import { Note, Space, Attr, parseQuery, Tag } from 'notu';
 import { SQLiteCache } from './SQLiteCache';
 import { SQLiteConnection } from './SQLiteConnection';
 import { SQLiteClient } from './SQLiteClient';
@@ -67,6 +67,16 @@ export class NotuServer {
         try {
             this._client.saveAttr(attr, connection);
             this._cache.invalidateAttrs();
+        }
+        finally {
+            connection.close();
+        }
+    }
+
+    getTags(): Array<Tag> {
+        const connection = this._connectionFactory();
+        try {
+            return this._cache.getTags(connection);
         }
         finally {
             connection.close();
