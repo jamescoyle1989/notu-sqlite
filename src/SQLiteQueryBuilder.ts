@@ -8,7 +8,7 @@ export function buildNotesQuery(
     cache: SQLiteCache,
     connection: SQLiteConnection
 ): string {
-    let output = 'SELECT n.id, n.spaceId, n.text, n.date, n.archived FROM Note n';
+    let output = 'SELECT n.id, n.spaceId, n.text, n.date FROM Note n';
     
     output += ` WHERE n.spaceId = ${spaceId}`
     if (!!parsedQuery.where)

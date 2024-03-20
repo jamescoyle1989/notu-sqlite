@@ -23,7 +23,6 @@ export class SQLiteClient {
                     spaceId INTEGER NOT NULL,
                     text TEXT NOT NULL,
                     date INTEGER NOT NULL,
-                    archived INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                 );`
             );
@@ -117,7 +116,6 @@ export class SQLiteClient {
                     const note = new Note(x.text).in(x.spaceId)
                         .at(new Date(x.date * 1000));
                     note.id = x.id;
-                    note.archived = x.archived > 0;
                     note.clean();
                     notesMap.set(note.id, note);
                     return note;
@@ -184,8 +182,8 @@ export class SQLiteClient {
         this._enforceForeignKeys(connection);
         if (note.isNew) {
             note.id = connection.run(
-                'INSERT INTO Note (date, text, archived, spaceId) VALUES (?, ?, ?, ?);',
-                Math.round(note.date.getTime() / 1000), note.text, note.archived ? 1 : 0, note.spaceId
+                'INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);',
+                Math.round(note.date.getTime() / 1000), note.text, note.spaceId
             ).lastInsertRowid as number;
             note.clean();
             for (const nt of note.tags)
@@ -195,8 +193,8 @@ export class SQLiteClient {
         }
         else if (note.isDirty) {
             connection.run(
-                'UPDATE Note SET date = ?, text = ?, archived = ?, spaceId = ? WHERE id = ?;',
-                Math.round(note.date.getTime() / 1000), note.text, note.archived ? 1 : 0, note.spaceId
+                'UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;',
+                Math.round(note.date.getTime() / 1000), note.text, note.spaceId
             );
             note.clean();
         }

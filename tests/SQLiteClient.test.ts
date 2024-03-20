@@ -162,7 +162,7 @@ test('saveNote inserts new note', () => {
     expect(note.id).toBe(345);
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, archived, spaceId) VALUES (?, ?, ?, ?);');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);');
     expect(connection.history.length).toBe(2);
 });
 
@@ -176,7 +176,7 @@ test('saveNote updates dirty attr', () => {
 
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('UPDATE Note SET date = ?, text = ?, archived = ?, spaceId = ? WHERE id = ?;');
+    expect(connection.history[1].command).toBe('UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;');
     expect(connection.history.length).toBe(2);
 });
 
@@ -198,7 +198,7 @@ test('getNotes fetches notes in correct format', () => {
     const connection = new MockConnection();
     const cache = new SQLiteCache();
     connection.nextGetAllOutput = [
-        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979, archived: 0}
+        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979}
     ];
     connection.onGetAll = () => connection.nextGetAllOutput = [];
 
@@ -209,7 +209,6 @@ test('getNotes fetches notes in correct format', () => {
     expect(notes[0].spaceId).toBe(1);
     expect(notes[0].text).toBe('Test test');
     expect(notes[0].date.getTime()).toBe(11708573979000);
-    expect(notes[0].archived).toBe(false);
 });
 
 test('saveNote for new note sets noteId on tags & attrs', () => {
@@ -229,7 +228,7 @@ test('saveNote for new note sets noteId on tags & attrs', () => {
     expect(note.id).toBe(345);
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, archived, spaceId) VALUES (?, ?, ?, ?);');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?, ?);');
     expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId) VALUES (?, ?)');
     expect(connection.history[2].args[0]).toBe(345);
     expect(connection.history[3].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
