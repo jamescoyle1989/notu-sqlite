@@ -1,6 +1,6 @@
 import { NotuServer } from './NotuServer';
 import { Security } from './Security';
-import { Note, Space, Attr } from 'notu';
+import { Note, Space, Attr, Tag } from 'notu';
 
 
 export class SecureNotuServer {
@@ -38,6 +38,11 @@ export class SecureNotuServer {
     async saveAttr(token: string, attr: Attr): Promise<void> {
         await this._security.verify(token);
         return this._notuServer.saveAttr(attr);
+    }
+
+    async getTags(token: string): Promise<Array<Tag>> {
+        await this._security.verify(token);
+        return this._notuServer.getTags();
     }
 
     async getNotes(token: string, query: string, spaceId: number): Promise<Array<Note>> {
