@@ -80,7 +80,7 @@ export class SQLiteCache {
         this._tags = connection
             .getAll('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;')
             .map(x => {
-                const tag = new Tag(x.name, x.spaceId);
+                const tag = new Tag(x.name).in(x.spaceId);
                 tag.id = x.id;
                 return tag.clean();
             });
