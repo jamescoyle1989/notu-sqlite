@@ -82,7 +82,7 @@ test('getTag refreshes cache if name not found', () => {
 
     expect(result.id).toBe(2);
     expect(connection.history.length).toBe(1);
-    expect(connection.history[0].command).toBe('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;');
+    expect(connection.history[0].command).toBe('SELECT n.id, t.name, n.spaceId, t.color, t.isPublic FROM Note n INNER JOIN Tag t ON n.id = t.id;');
 });
 
 test('getTag makes no query if name is found', () => {

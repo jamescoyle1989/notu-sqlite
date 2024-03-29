@@ -16,10 +16,10 @@ function mockSpaceSetup(): Array<any> {
 
 function mockTagSetup(): Array<any> {
     return [
-        { id: 1, name: 'Live', spaceId: 1 },
-        { id: 2, name: 'Live', spaceId: 2 },
-        { id: 3, name: 'Laugh', spaceId: 1 },
-        { id: 4, name: 'Love', spaceId: 2 }
+        { id: 1, name: 'Live', spaceId: 1, isPublic: true },
+        { id: 2, name: 'Live', spaceId: 2, isPublic: true },
+        { id: 3, name: 'Laugh', spaceId: 1, isPublic: true },
+        { id: 4, name: 'Love', spaceId: 2, isPublic: true }
     ];
 }
 

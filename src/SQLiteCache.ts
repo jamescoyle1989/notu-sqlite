@@ -78,10 +78,12 @@ export class SQLiteCache {
 
     private _repopulateTagCache(connection: SQLiteConnection): void {
         this._tags = connection
-            .getAll('SELECT n.id, t.name, n.spaceId FROM Note n INNER JOIN Tag t ON n.id = t.id;')
+            .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.isPublic FROM Note n INNER JOIN Tag t ON n.id = t.id;')
             .map(x => {
                 const tag = new Tag(x.name).in(x.spaceId);
                 tag.id = x.id;
+                tag.color = x.color;
+                tag.isPublic = x.isPublic;
                 return tag.clean();
             });
     }

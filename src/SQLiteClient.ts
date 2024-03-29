@@ -34,6 +34,7 @@ export class SQLiteClient {
                     id INTEGER NOT NULL,
                     name TEXT NOT NULL,
                     color INTEGER NULL,
+                    isPublic INTEGER NOT NULL,
                     PRIMARY KEY (id),
                     FOREIGN KEY (id) REFERENCES Note(id) ON DELETE CASCADE
                 );`
@@ -216,15 +217,15 @@ export class SQLiteClient {
     private _saveTag(tag: Tag, connection: SQLiteConnection): void {
         if (tag.isNew) {
             connection.run(
-                'INSERT INTO Tag (id, name, color) VALUES (?, ?, ?);',
-                tag.id, tag.name, tag.getColorInt()
+                'INSERT INTO Tag (id, name, color, isPublic) VALUES (?, ?, ?, ?);',
+                tag.id, tag.name, tag.getColorInt(), tag.isPublic ? 1 : 0
             );
             tag.clean();
         }
         else if (tag.isDirty) {
             connection.run(
-                'UPDATE Tag SET name = ?, color = ? WHERE id = ?;',
-                tag.name, tag.getColorInt(), tag.id
+                'UPDATE Tag SET name = ?, color = ?, isPublic = ? WHERE id = ?;',
+                tag.name, tag.getColorInt(), tag.id, tag.isPublic ? 1 : 0
             );
             tag.clean();
         }
