@@ -130,7 +130,7 @@ export class SQLiteClient {
                     return note.addTag(tag).clean();
                 });
 
-            const noteAttrsSQL = `SELECT noteId, attrId, value FROM NoteAttr WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
+            const noteAttrsSQL = `SELECT noteId, attrId, tagId, value FROM NoteAttr WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
             connection.getAll(noteAttrsSQL)
                 .map(x => {
                     const note = notesMap.get(x.noteId);
