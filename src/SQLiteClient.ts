@@ -195,7 +195,7 @@ export class SQLiteClient {
         else if (note.isDirty) {
             connection.run(
                 'UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;',
-                Math.round(note.date.getTime() / 1000), note.text, note.spaceId
+                Math.round(note.date.getTime() / 1000), note.text, note.spaceId, note.id
             );
             note.clean();
         }
