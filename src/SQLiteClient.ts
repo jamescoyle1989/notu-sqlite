@@ -300,8 +300,12 @@ export class SQLiteClient {
     private _convertAttrValueToDb(noteAttr: NoteAttr): any {
         if (noteAttr.attr.isBoolean)
             return noteAttr.value ? 1 : 0;
-        if (noteAttr.attr.isDate)
-            return Math.round(noteAttr.value.getTime() / 1000);
+        if (noteAttr.attr.isDate) {
+            const dateValue = new Date(noteAttr.value);
+            if (!(noteAttr.value instanceof Date))
+                noteAttr.value = dateValue;
+            return Math.round(dateValue.getTime() / 1000);
+        }
         return noteAttr.value;
     }
 

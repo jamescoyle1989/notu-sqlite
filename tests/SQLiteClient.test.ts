@@ -235,3 +235,21 @@ test('saveNote for new note sets noteId on tags & attrs', () => {
     expect(connection.history[3].args[0]).toBe(345);
     expect(connection.history.length).toBe(4);
 });
+
+test('saveNote with date attr handles if the value is formatted as a string', () => {
+    const client = new SQLiteClient();
+    const connection = new MockConnection();
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
+    const note = new Note('test').in(78);
+    const attr = new Attr('My Attr').in(78).asDate().clean();
+    attr.id = 234;
+    note.addAttr(attr).withValue('1988-08-07T00:00:00.000Z');
+
+    client.saveNote(note, connection as any);
+
+    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
+    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
+    expect(connection.history[2].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
+    expect(connection.history[2].args[2]).toBe(new Date('1988-08-07T00:00:00.000Z').getTime() / 1000);
+    expect(note.attrs[0].value.getTime()).toBe(new Date('1988-08-07T00:00:00.000Z').getTime());
+});
