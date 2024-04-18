@@ -302,7 +302,6 @@ export class SQLiteClient {
             return noteAttr.value ? 1 : 0;
         if (noteAttr.attr.isDate) {
             const dateValue = new Date(noteAttr.value);
-            console.log({dateValue});
             if (!(noteAttr.value instanceof Date))
                 noteAttr.value = dateValue;
             return Math.round(dateValue.getTime() / 1000);
