@@ -109,7 +109,7 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         );
 });
 
-test('buildNotesQuery throws error if trying to search for tags more than 1 relation deep', () => {
+test('buildNotesQuery can search for strict matches 2 relations deep', () => {
     const query = new ParsedQuery();
     query.where = '{tag0}';
     query.tags.push((() => {
@@ -122,7 +122,12 @@ test('buildNotesQuery throws error if trying to search for tags more than 1 rela
         return tag;
     })());
 
-    expect(() => buildNotesQuery(query, 1, mockCache(), new MockConnection() as any)).toThrowError();
+    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+        .toBe(
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt1 INNER JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND nt2.tagId = 3));'
+        );
 });
 
 test('buildNotesQuery correctly processes query with attr exists condition', () => {

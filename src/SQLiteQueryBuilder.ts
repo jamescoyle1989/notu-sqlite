@@ -32,6 +32,18 @@ export function buildNotesQuery(
         else if (parsedTag.searchDepth == 1)
             output = output.replace(`{tag${i}}`, `(n.id = ${tag.id} OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = ${tag.id}))`);
 
+        else if (parsedTag.searchDepth == 2 && parsedTag.strictSearchDepth && !parsedTag.includeOwner)
+            output = output.replace(`{tag${i}}`, `EXISTS(SELECT 1 FROM NoteTag nt1 INNER JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND nt2.tagId = ${tag.id})`);
+
+        else if (parsedTag.searchDepth == 2 && parsedTag.strictSearchDepth && parsedTag.includeOwner)
+            output = output.replace(`tag${i}`, `(n.id = ${tag.id} OR EXISTS(SELECT 1 FROM NoteTag nt1 INNER JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND nt2.tagId = ${tag.id}))`);
+
+        else if (parsedTag.searchDepth == 2 && !parsedTag.strictSearchDepth && !parsedTag.includeOwner)
+            output = output.replace(`tag${i}`, `EXISTS(SELECT 1 FROM NoteTag nt1 LEFT JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND ${tag.id} IN (nt1.tagId, nt2.tagId))`);
+
+        else if (parsedTag.searchDepth == 2)
+            output = output.replace(`tag${i}`, `(n.id = ${tag.id} OR EXISTS(SELECT 1 FROM NoteTag nt1 LEFT JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND ${tag.id} IN (nt1.tagId, nt2.tagId)))`);
+
         else
             throw Error(`Sorry, that tag search feature hasn't been implemented yet.`);
     }
