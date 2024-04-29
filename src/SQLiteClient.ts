@@ -58,6 +58,7 @@ export class SQLiteClient {
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     spaceId INTEGER NOT NULL,
                     name TEXT NOT NULL,
+                    description TEXT NOT NULL,
                     type INTEGER NOT NULL,
                     FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                 );`
@@ -156,16 +157,16 @@ export class SQLiteClient {
         if (attr.isNew) {
             this._enforceForeignKeys(connection);
             attr.id = connection.run(
-                'INSERT INTO Attr (spaceId, name, type) VALUES (?, ?, ?);',
-                attr.spaceId, attr.name, mapAttrTypeToDb(attr.type)
+                'INSERT INTO Attr (spaceId, name, description, type) VALUES (?, ?, ?, ?);',
+                attr.spaceId, attr.name, attr.description, mapAttrTypeToDb(attr.type)
             ).lastInsertRowid as number;
             attr.clean();
         }
         else if (attr.isDirty) {
             this._enforceForeignKeys(connection);
             connection.run(
-                'UPDATE Attr SET spaceId = ?, name = ?, type = ? WHERE id = ?;',
-                attr.spaceId, attr.name, mapAttrTypeToDb(attr.type), attr.id
+                'UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ? WHERE id = ?;',
+                attr.spaceId, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.id
             );
             attr.clean();
         }

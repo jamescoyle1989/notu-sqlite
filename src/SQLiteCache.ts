@@ -131,9 +131,9 @@ export class SQLiteCache {
 
     private _repopulateAttrCache(connection: SQLiteConnection): void {
         this._attrs = connection
-            .getAll('SELECT id, name, spaceId, type FROM Attr;')
+            .getAll('SELECT id, name, description, spaceId, type FROM Attr;')
             .map(x => {
-                const attr = new Attr(x.name).in(x.spaceId);
+                const attr = new Attr(x.name, x.description).in(x.spaceId);
                 attr.id = x.id;
                 attr.type = mapAttrTypeFromDb(x.type);
                 return attr.clean();

@@ -117,7 +117,7 @@ test('saveAttr inserts new attr', () => {
     expect(attr.id).toBe(234);
     expect(attr.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Attr (spaceId, name, type) VALUES (?, ?, ?);');
+    expect(connection.history[1].command).toBe('INSERT INTO Attr (spaceId, name, description, type) VALUES (?, ?, ?, ?);');
     expect(connection.history.length).toBe(2);
 });
 
@@ -133,7 +133,7 @@ test('saveAttr updates dirty attr', () => {
 
     expect(attr.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('UPDATE Attr SET spaceId = ?, name = ?, type = ? WHERE id = ?;');
+    expect(connection.history[1].command).toBe('UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ? WHERE id = ?;');
     expect(connection.history.length).toBe(2);
 });
 

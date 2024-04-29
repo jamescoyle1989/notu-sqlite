@@ -127,7 +127,7 @@ test('getAttr refreshes cache if name not found', () => {
 
     expect(result.id).toBe(1);
     expect(connection.history.length).toBe(1);
-    expect(connection.history[0].command).toBe('SELECT id, name, spaceId, type FROM Attr;');
+    expect(connection.history[0].command).toBe('SELECT id, name, description, spaceId, type FROM Attr;');
 });
 
 test('getAttr makes no query if name is found', () => {

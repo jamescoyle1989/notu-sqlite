@@ -238,8 +238,8 @@ test('saveNote uses cache to populate attributes before saving', () => {
     );
     connection.nextRunOutput = { changes: 1, lastInsertRowid: 1};
     const note = new Note('I am a test');
-    note.tags.push(new NoteTag(0, 3));
-    note.attrs.push(new NoteAttr(0, 1).onTag(3));
+    note['_tags'].push(new NoteTag(0, 3));
+    note['_attrs'].push(new NoteAttr(0, 1).onTag(3));
 
     server.saveNote(note);
 
