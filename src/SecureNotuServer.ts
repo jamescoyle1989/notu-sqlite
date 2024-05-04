@@ -20,6 +20,12 @@ export class SecureNotuServer {
         return await this._security.sign(username, password);
     }
 
+    /** Provides a way to verify the token upfront, so that following actions can be assured that they are working from a verified request. */
+    async verify(token: string): Promise<NotuServer> {
+        await this._security.verify(token);
+        return this._notuServer;
+    }
+
     async getSpaces(token: string): Promise<Array<Space>> {
         await this._security.verify(token);
         return this._notuServer.getSpaces();
