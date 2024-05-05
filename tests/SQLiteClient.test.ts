@@ -72,7 +72,7 @@ test('saveSpace inserts new space', () => {
 
     expect(space.id).toBe(123);
     expect(space.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('INSERT INTO Space (name) VALUES (?);');
+    expect(connection.history[0].command).toBe('INSERT INTO Space (name, version) VALUES (?, ?);');
     expect(connection.history.length).toBe(1);
 });
 
@@ -85,7 +85,7 @@ test('saveSpace updates space if dirty', () => {
     client.saveSpace(space, connection as any);
 
     expect(space.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('UPDATE Space SET name = ? WHERE id = ?;');
+    expect(connection.history[0].command).toBe('UPDATE Space SET name = ?, version = ? WHERE id = ?;');
     expect(connection.history.length).toBe(1);
 });
 

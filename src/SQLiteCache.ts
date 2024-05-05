@@ -8,9 +8,9 @@ export class SQLiteCache {
 
     private _populateSpaces(connection: SQLiteConnection): void {
         this._spaces = connection
-            .getAll('SELECT id, name FROM Space;')
+            .getAll('SELECT id, name, version FROM Space;')
             .map(x => {
-                const space = new Space(x.name);
+                const space = new Space(x.name).v(x.version);
                 space.id = x.id;
                 return space.clean();
             });

@@ -38,7 +38,7 @@ test('getSpace refreshes cache if name not found', () => {
 
     expect(result.id).toBe(3);
     expect(connection.history.length).toBe(1);
-    expect(connection.history[0].command).toBe('SELECT id, name FROM Space;');
+    expect(connection.history[0].command).toBe('SELECT id, name, version FROM Space;');
 });
 
 test('getSpace makes no query if name is found', () => {

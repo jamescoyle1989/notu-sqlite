@@ -13,7 +13,8 @@ export class SQLiteClient {
             connection.run(
                 `CREATE TABLE Space (
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL
+                    name TEXT NOT NULL,
+                    version TEXT NOT NULL
                 )`
             );
             
@@ -87,15 +88,15 @@ export class SQLiteClient {
     saveSpace(space: Space, connection: SQLiteConnection): void {
         if (space.isNew) {
             space.id = connection.run(
-                'INSERT INTO Space (name) VALUES (?);',
-                space.name
+                'INSERT INTO Space (name, version) VALUES (?, ?);',
+                space.name, space.version
             ).lastInsertRowid as number;
             space.clean();
         }
         else if (space.isDirty) {
             connection.run(
-                'UPDATE Space SET name = ? WHERE id = ?;',
-                space.name, space.id
+                'UPDATE Space SET name = ?, version = ? WHERE id = ?;',
+                space.name, space.version, space.id
             );
             space.clean();
         }
