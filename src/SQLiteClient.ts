@@ -195,7 +195,7 @@ export class SQLiteClient {
             note.clean();
             for (const nt of note.tags)
                 nt.noteId = note.id;
-            for (const na of note.attrs)
+            for (const na of note.allAttrs)
                 na.noteId = note.id;
         }
         else if (note.isDirty) {
@@ -215,7 +215,9 @@ export class SQLiteClient {
             if (!!note.ownTag)
                 this._saveTag(note.ownTag, connection);
             this._saveNoteTags(note.tags, connection);
-            this._saveNoteAttrs(note.attrs, connection);
+            this._deleteNoteTags(note.tagsPendingDeletion, connection);
+            this._saveNoteAttrs(note.allAttrs, connection);
+            this._deleteNoteAttrs(note.allAttrsPendingDeletion, connection);
         }
     }
 
@@ -247,7 +249,6 @@ export class SQLiteClient {
     //Important that all note tags passed in must belong to the same note
     private _saveNoteTags(noteTags: Array<NoteTag>, connection: SQLiteConnection): void {
         const inserts = noteTags.filter(x => x.isNew);
-        const deletes = noteTags.filter(x => x.isDeleted);
 
         if (inserts.length > 0) {
             let command = 'INSERT INTO NoteTag (noteId, tagId) VALUES ' + inserts.map(x => '(?, ?)').join(', ');
@@ -258,10 +259,13 @@ export class SQLiteClient {
             }
             connection.run(command, ...args);
         }
-        if (deletes.length > 0) {
-            let command = `DELETE FROM NoteTag WHERE noteId = ? AND tagId IN (${deletes.map(x => x.tagId).join(', ')})`;
-            let args = [deletes[0].noteId];
-            for (const del of deletes)
+    }
+
+    private _deleteNoteTags(noteTagsPendingDeletion: Array<NoteTag>, connection: SQLiteConnection): void {
+        if (noteTagsPendingDeletion.length > 0) {
+            let command = `DELETE FROM NoteTag WHERE noteId = ? AND tagId IN (${noteTagsPendingDeletion.map(x => x.tagId).join(', ')})`;
+            let args = [noteTagsPendingDeletion[0].noteId];
+            for (const del of noteTagsPendingDeletion)
                 args.push(del.tagId);
             connection.run(command, ...args);
         }
@@ -271,7 +275,6 @@ export class SQLiteClient {
     private _saveNoteAttrs(noteAttrs: Array<NoteAttr>, connection: SQLiteConnection): void {
         const inserts = noteAttrs.filter(x => x.isNew);
         const updates = noteAttrs.filter(x => x.isDirty);
-        const deletes = noteAttrs.filter(x => x.isDeleted);
 
         if (inserts.length > 0) {
             let command = 'INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES ' + inserts.map(x => '(?, ?, ?, ?)').join(', ');
@@ -289,10 +292,13 @@ export class SQLiteClient {
             );
             update.clean();
         }
-        if (deletes.length > 0) {
-            let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${deletes.map(x => '(attrId = ? AND tagId = ?)').join(' OR ')})`;
-            let args = [deletes[0].noteId];
-            for (const del of deletes)
+    }
+
+    private _deleteNoteAttrs(noteAttrsForDeletion: Array<NoteAttr>, connection: SQLiteConnection): void {
+        if (noteAttrsForDeletion.length > 0) {
+            let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${noteAttrsForDeletion.map(x => '(attrId = ? AND tagId = ?)').join(' OR ')})`;
+            let args = [noteAttrsForDeletion[0].noteId];
+            for (const del of noteAttrsForDeletion)
                 args.push(del.attrId, del.tagId);
             connection.run(command, ...args);
         }

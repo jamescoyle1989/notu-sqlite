@@ -180,7 +180,7 @@ test('saveNote updates dirty attr', () => {
     expect(connection.history.length).toBe(2);
 });
 
-test('saveNote deletes attr if flagged for deletion', () => {
+test('saveNote deletes note if flagged for deletion', () => {
     const client = new SQLiteClient();
     const connection = new MockConnection();
     const note = new Note('test').in(78).delete();
@@ -190,6 +190,27 @@ test('saveNote deletes attr if flagged for deletion', () => {
 
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('DELETE FROM Note WHERE id = ?;');
+    expect(connection.history.length).toBe(2);
+});
+
+test('saveNote deletes attr if flagged for deletion', () => {
+    const client = new SQLiteClient();
+    const connection = new MockConnection();
+    const attr = new Attr('Weight').in(78).asNumber().clean();
+    attr.id = 123;
+    const note = new Note('test').in(78).clean();
+    note.id = 9;
+    note.addAttr(attr).withValue(25).clean();
+    note.clean();
+
+    note.removeAttr(attr);
+    client.saveNote(note, connection as any);
+
+    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
+    expect(connection.history[1].command).toBe('DELETE FROM NoteAttr WHERE noteId = ? AND ((attrId = ? AND tagId = ?))');
+    expect(connection.history[1].args[0]).toBe(note.id);
+    expect(connection.history[1].args[1]).toBe(attr.id);
+    expect(connection.history[1].args[2]).toBe(null);
     expect(connection.history.length).toBe(2);
 });
 
@@ -274,5 +295,5 @@ test('saveNote with date attr handles if the value is formatted as a string', ()
     expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
     expect(connection.history[2].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
     expect(connection.history[2].args[2]).toBe(new Date('1988-08-07T00:00:00.000Z').getTime() / 1000);
-    expect(note.attrs[0].value.getTime()).toBe(new Date('1988-08-07T00:00:00.000Z').getTime());
+    expect(note.allAttrs[0].value.getTime()).toBe(new Date('1988-08-07T00:00:00.000Z').getTime());
 });

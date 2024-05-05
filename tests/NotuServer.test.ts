@@ -88,10 +88,10 @@ test('getNotes properly queries the database', () => {
     expect(notes.length).toBe(1);
     expect(notes[0].text).toBe('hello');
     expect(notes[0].tags.length).toBe(1);
-    expect(notes[0].attrs.length).toBe(1);
-    expect(notes[0].attrs[0].tag.id).toBe(2);
+    expect(notes[0].allAttrs.length).toBe(1);
+    expect(notes[0].allAttrs[0].tag.id).toBe(2);
     expect(connection.history.length).toBe(3);
-    expect(connection.history[0].command).toBe(`SELECT n.id, n.spaceId, n.text, n.date FROM Note n WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1));`);
+    expect(connection.history[0].command).toBe(`SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1));`);
     expect(connection.history[1].command).toBe(`SELECT noteId, tagId FROM NoteTag WHERE noteId IN (1);`);
     expect(connection.history[2].command).toBe(`SELECT noteId, attrId, tagId, value FROM NoteAttr WHERE noteId IN (1);`);
 });
@@ -244,8 +244,8 @@ test('saveNote uses cache to populate attributes before saving', () => {
     server.saveNote(note);
 
     expect(note.tags[0].tag).toBeNull();
-    expect(note.attrs[0].attr.name).toBe('Live');
-    expect(note.attrs[0].tag).toBeNull();
+    expect(note.allAttrs[0].attr.name).toBe('Live');
+    expect(note.allAttrs[0].tag).toBeNull();
 });
 
 
@@ -335,5 +335,5 @@ test('getNotes should return clean notes', () => {
 
     expect(notes[0].isClean).toBe(true);
     expect(notes[0].tags[0].isClean).toBe(true);
-    expect(notes[0].attrs[0].isClean).toBe(true);
+    expect(notes[0].allAttrs[0].isClean).toBe(true);
 });

@@ -99,7 +99,7 @@ export class NotuServer {
         const connection = this._connectionFactory();
         try {
             const invalidateTags = !!note.ownTag && !note.ownTag.isClean;
-            for (const na of note.attrs)
+            for (const na of note.allAttrs)
                 na.attr = this._cache.getAttrById(na.attrId, connection);
             this._client.saveNote(note, connection);
             if (invalidateTags)
