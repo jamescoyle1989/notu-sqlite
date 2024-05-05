@@ -37,7 +37,7 @@ test('buildNotesQuery correctly processes empty query', () => {
     const query = new ParsedQuery();
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date FROM Note n WHERE n.spaceId = 1;');
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id WHERE n.spaceId = 1;');
 });
 
 test('buildNotesQuery correctly processes query with order clause', () => {
@@ -45,7 +45,7 @@ test('buildNotesQuery correctly processes query with order clause', () => {
     query.order = 'date';
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date FROM Note n WHERE n.spaceId = 1 ORDER BY date;');
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id WHERE n.spaceId = 1 ORDER BY date;');
 });
 
 test('buildNotesQuery correctly processes query with self tag filter', () => {
@@ -61,8 +61,8 @@ test('buildNotesQuery correctly processes query with self tag filter', () => {
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND (n.id = 3);'
         );
 });
@@ -82,8 +82,8 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3));'
         );
 });
@@ -103,8 +103,8 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND ((n.id = 3 OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3)));'
         );
 });
@@ -124,8 +124,8 @@ test('buildNotesQuery can search for strict matches 2 relations deep', () => {
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt1 INNER JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND nt2.tagId = 3));'
         );
 });
@@ -142,8 +142,8 @@ test('buildNotesQuery correctly processes query with attr exists condition', () 
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5));'
         );
 });
@@ -160,8 +160,8 @@ test('buildNotesQuery correctly processes query with attr condition', () => {
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5) AS TEXT) = 'hello');`
         );
 });
@@ -183,8 +183,8 @@ test('buildNotesQuery correctly processes query with attr exists condition on sp
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)));'
         );
 });
@@ -206,8 +206,8 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
 
     expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date ' +
-            'FROM Note n ' +
+            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
+            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
             `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)) AS TEXT) = 'hello');`
         );
 });

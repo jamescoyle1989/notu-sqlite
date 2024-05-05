@@ -119,6 +119,10 @@ export class SQLiteClient {
                     const note = new Note(x.text).in(x.spaceId)
                         .at(new Date(x.date * 1000));
                     note.id = x.id;
+                    if (!!x.tagId) {
+                        note.setOwnTag(cache.getTagById(x.tagId, connection));
+                        note.ownTag.clean();
+                    }
                     note.clean();
                     notesMap.set(note.id, note);
                     return note;

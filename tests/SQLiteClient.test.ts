@@ -198,9 +198,32 @@ test('getNotes fetches notes in correct format', () => {
     const connection = new MockConnection();
     const cache = new SQLiteCache();
     connection.nextGetAllOutput = [
-        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979}
+        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979, tagId: null}
     ];
     connection.onGetAll = () => connection.nextGetAllOutput = [];
+
+    const notes = client.getNotes('', connection as any, cache);
+
+    expect(notes.length).toBe(1);
+    expect(notes[0].id).toBe(5);
+    expect(notes[0].spaceId).toBe(1);
+    expect(notes[0].text).toBe('Test test');
+    expect(notes[0].date.getTime()).toBe(11708573979000);
+});
+
+test('getNotes populates a notes own tag if present', () => {
+    const client = new SQLiteClient();
+    const connection = new MockConnection();
+    const cache = new SQLiteCache();
+    connection.nextGetAllOutput = [
+        {id: 5, spaceId: 1, text: 'Test test', date: 11708573979, tagId: 5}
+    ];
+    connection.onGetAll = () => {
+        connection.nextGetAllOutput = [
+            {id: 5, name: 'Boopity', spaceId: 1, color: '#112233', isPublic: false}
+        ]
+        connection.onGetAll = () => connection.nextGetAllOutput = []
+    };
 
     const notes = client.getNotes('', connection as any, cache);
 
