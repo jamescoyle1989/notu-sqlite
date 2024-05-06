@@ -1,15 +1,11 @@
-import { NotuServer } from './NotuServer';
-import { SecureNotuServer } from './SecureNotuServer';
 import { Security } from './Security';
-import { SQLiteCache } from './SQLiteCache';
-import { SQLiteClient } from './SQLiteClient';
+import { NotuSQLiteCacheFetcher } from './NotuSQLiteCacheFetcher';
+import { NotuSQLiteClient } from './NotuSQLiteClient';
 import { SQLiteConnection } from './SQLiteConnection';
 
 export {
-    NotuServer,
-    SecureNotuServer,
     Security,
-    SQLiteCache,
-    SQLiteClient,
+    NotuSQLiteCacheFetcher,
+    NotuSQLiteClient,
     SQLiteConnection
 };

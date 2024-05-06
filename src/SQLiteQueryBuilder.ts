@@ -1,14 +1,11 @@
-import { Attr, ParsedQuery } from 'notu';
-import { SQLiteCache } from './SQLiteCache';
-import { SQLiteConnection } from './SQLiteConnection';
+import { Attr, ParsedQuery, NotuCache } from 'notu';
 
 export function buildNotesQuery(
     parsedQuery: ParsedQuery,
     spaceId: number,
-    cache: SQLiteCache,
-    connection: SQLiteConnection
+    cache: NotuCache
 ): string {
-    let output = 'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id';
+    let output = 'SELECT n.id, n.spaceId, n.text, n.date FROM Note n';
     
     output += ` WHERE n.spaceId = ${spaceId}`
     if (!!parsedQuery.where)
@@ -18,10 +15,9 @@ export function buildNotesQuery(
 
     for (let i = 0; i < parsedQuery.tags.length; i++) {
         const parsedTag = parsedQuery.tags[i];
-        const tag = cache.getTag(
+        const tag = cache.getTagByName(
             parsedTag.name,
-            !!parsedTag.space ? cache.getSpace(parsedTag.space, connection).id : spaceId,
-            connection
+            !!parsedTag.space ? cache.getSpaceByName(parsedTag.space).id : spaceId
         );
         if (parsedTag.searchDepth == 0)
             output = output.replace(`{tag${i}}`, `n.id = ${tag.id}`);
@@ -50,14 +46,13 @@ export function buildNotesQuery(
 
     for (let i = 0; i < parsedQuery.attrs.length; i++) {
         const parsedAttr = parsedQuery.attrs[i];
-        const attr = cache.getAttr(parsedAttr.name, spaceId, connection);
+        const attr = cache.getAttrByName(parsedAttr.name, spaceId);
         let tagIds = [];
         if (!!parsedAttr.tagNameFilters) {
             tagIds = parsedAttr.tagNameFilters
-                .map(parsedTag => cache.getTag(
+                .map(parsedTag => cache.getTagByName(
                     parsedTag.name,
-                    !!parsedTag.space ? cache.getSpace(parsedTag.space, connection).id : spaceId,
-                    connection
+                    !!parsedTag.space ? cache.getSpaceByName(parsedTag.space).id : spaceId
                 ).id);
         }
         
