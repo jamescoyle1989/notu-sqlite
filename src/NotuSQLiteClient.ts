@@ -355,7 +355,7 @@ export class NotuSQLiteClient {
             let command = 'INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES ' + inserts.map(x => '(?, ?, ?, ?)').join(', ');
             let args = [];
             for (const insert of inserts) {
-                args.push(noteId, insert.attr.id, this._convertAttrValueToDb(insert), insert.tag.id);
+                args.push(noteId, insert.attr.id, this._convertAttrValueToDb(insert), insert.tag?.id ?? null);
                 insert.clean();
             }
             connection.run(command, ...args);
@@ -363,7 +363,7 @@ export class NotuSQLiteClient {
         for (const update of updates) {
             connection.run(
                 'UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND tagId = ?;',
-                this._convertAttrValueToDb(update), noteId, update.attr.id, update.tag.id
+                this._convertAttrValueToDb(update), noteId, update.attr.id, update.tag?.id ?? null
             );
             update.clean();
         }
@@ -374,7 +374,7 @@ export class NotuSQLiteClient {
             let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${noteAttrsForDeletion.map(x => '(attrId = ? AND tagId = ?)').join(' OR ')})`;
             let args = [noteId];
             for (const del of noteAttrsForDeletion)
-                args.push(del.attr.id, del.tag.id);
+                args.push(del.attr.id, del.tag?.id ?? null);
             connection.run(command, ...args);
         }
     }

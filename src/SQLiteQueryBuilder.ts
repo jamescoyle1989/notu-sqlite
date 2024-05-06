@@ -64,9 +64,9 @@ export function buildNotesQuery(
         }
         else {
             if (tagIds.length == 0)
-                output = output.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5) AS ${getAttrSQLType(attr)})`);
+                output = output.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attr.id}) AS ${getAttrSQLType(attr)})`);
             else
-                output = output.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (${tagIds.join(',')})) AS ${getAttrSQLType(attr)})`);
+                output = output.replace(`{attr${i}}`, `CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = ${attr.id} AND na.tagId IN (${tagIds.join(',')})) AS ${getAttrSQLType(attr)})`);
         }
     }
 

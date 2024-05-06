@@ -1,54 +1,32 @@
 import { expect, test } from 'vitest';
-import { ParsedAttr, ParsedQuery, ParsedTag } from 'notu';
+import { NotuCache, ParsedAttr, ParsedQuery, ParsedTag } from 'notu';
 import { buildNotesQuery } from '../src/SQLiteQueryBuilder';
-import { SQLiteCache } from '../src/SQLiteCache';
-import { MockConnection } from './SQLiteClient.test';
+import { testCacheFetcher } from './TestHelpers';
 
 
-
-function mockCache(): SQLiteCache {
-    const cache = new SQLiteCache();
-    const connection = new MockConnection();
-
-    connection.nextGetAllOutput = [
-        { id: 1, name: 'Space 1' },
-        { id: 2, name: 'Space 2' }
-    ];
-    cache.getSpace('Space 1', connection as any);
-
-    connection.nextGetAllOutput = [
-        { id: 3, name: 'Tag 1', spaceId: 1 },
-        { id: 4, name: 'Tag 2', spaceId: 2 }
-    ];
-    cache.getTag('Tag 1', 1, connection as any);
-
-    connection.nextGetAllOutput = [
-        { id: 5, name: 'Attr 1', spaceId: 1, type: 1 },
-        { id: 6, name: 'Attr 2', spaceId: 2, type: 2 }
-    ];
-    cache.getAttr('Attr 1', 1, connection as any);
-
+async function newNotuCache(): Promise<NotuCache> {
+    const cache = new NotuCache(testCacheFetcher());
+    await cache.populate();
     return cache;
 }
 
 
-
-test('buildNotesQuery correctly processes empty query', () => {
+test('buildNotesQuery correctly processes empty query', async () => {
     const query = new ParsedQuery();
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id WHERE n.spaceId = 1;');
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date FROM Note n WHERE n.spaceId = 1;');
 });
 
-test('buildNotesQuery correctly processes query with order clause', () => {
+test('buildNotesQuery correctly processes query with order clause', async () => {
     const query = new ParsedQuery();
     query.order = 'date';
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
-        .toBe('SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId FROM Note n LEFT JOIN Tag tag ON n.id = tag.id WHERE n.spaceId = 1 ORDER BY date;');
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
+        .toBe('SELECT n.id, n.spaceId, n.text, n.date FROM Note n WHERE n.spaceId = 1 ORDER BY date;');
 });
 
-test('buildNotesQuery correctly processes query with self tag filter', () => {
+test('buildNotesQuery correctly processes query with self tag filter', async () => {
     const query = new ParsedQuery();
     query.where = '{tag0}';
     query.tags.push((() => {
@@ -59,15 +37,15 @@ test('buildNotesQuery correctly processes query with self tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            'WHERE n.spaceId = 1 AND (n.id = 3);'
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND (n.id = 1);'
         );
 });
 
-test('buildNotesQuery correctly processes query with child tag filter', () => {
+test('buildNotesQuery correctly processes query with child tag filter', async () => {
     const query = new ParsedQuery();
     query.where = '{tag0}';
     query.tags.push((() => {
@@ -80,15 +58,15 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3));'
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1));'
         );
 });
 
-test('buildNotesQuery correctly processes query with child tag filter', () => {
+test('buildNotesQuery correctly processes query with child tag filter', async () => {
     const query = new ParsedQuery();
     query.where = '{tag0}';
     query.tags.push((() => {
@@ -101,20 +79,20 @@ test('buildNotesQuery correctly processes query with child tag filter', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            'WHERE n.spaceId = 1 AND ((n.id = 3 OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 3)));'
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND ((n.id = 1 OR EXISTS(SELECT 1 FROM NoteTag nt WHERE nt.noteId = n.id AND nt.tagId = 1)));'
         );
 });
 
-test('buildNotesQuery can search for strict matches 2 relations deep', () => {
+test('buildNotesQuery can search for strict matches 2 relations deep', async () => {
     const query = new ParsedQuery();
     query.where = '{tag0}';
     query.tags.push((() => {
         const tag = new ParsedTag();
-        tag.name = 'Tag 1';
+        tag.name = 'Tag 3';
         tag.space = null;
         tag.searchDepth = 2;
         tag.includeOwner = false;
@@ -122,33 +100,33 @@ test('buildNotesQuery can search for strict matches 2 relations deep', () => {
         return tag;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
             'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteTag nt1 INNER JOIN NoteTag nt2 ON nt2.noteId = nt1.tagId WHERE nt1.noteId = n.id AND nt2.tagId = 3));'
         );
 });
 
-test('buildNotesQuery correctly processes query with attr exists condition', () => {
+test('buildNotesQuery correctly processes query with attr exists condition', async () => {
     const query = new ParsedQuery();
     query.where = '{attr0}';
     query.attrs.push((() => {
         const attr = new ParsedAttr();
-        attr.name = 'Attr 1';
+        attr.name = 'Attr 2';
         attr.exists = true;
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5));'
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 2));'
         );
 });
 
-test('buildNotesQuery correctly processes query with attr condition', () => {
+test('buildNotesQuery correctly processes query with attr condition', async () => {
     const query = new ParsedQuery();
     query.where = `{attr0} = 'hello'`;
     query.attrs.push((() => {
@@ -158,15 +136,15 @@ test('buildNotesQuery correctly processes query with attr condition', () => {
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5) AS TEXT) = 'hello');`
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 1) AS TEXT) = 'hello');`
         );
 });
 
-test('buildNotesQuery correctly processes query with attr exists condition on specific tags', () => {
+test('buildNotesQuery correctly processes query with attr exists condition on specific tags', async () => {
     const query = new ParsedQuery();
     query.where = '{attr0}';
     query.attrs.push((() => {
@@ -181,15 +159,15 @@ test('buildNotesQuery correctly processes query with attr exists condition on sp
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)));'
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            'WHERE n.spaceId = 1 AND (EXISTS(SELECT 1 FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 1 AND na.tagId IN (1)));'
         );
 });
 
-test('buildNotesQuery correctly processes query with attr condition on specific tags', () => {
+test('buildNotesQuery correctly processes query with attr condition on specific tags', async () => {
     const query = new ParsedQuery();
     query.where = `{attr0} = 'hello'`;
     query.attrs.push((() => {
@@ -204,10 +182,10 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
         return attr;
     })());
 
-    expect(buildNotesQuery(query, 1, mockCache(), new MockConnection() as any))
+    expect(buildNotesQuery(query, 1, await newNotuCache()))
         .toBe(
-            'SELECT n.id, n.spaceId, n.text, n.date, tag.id AS tagId ' +
-            'FROM Note n LEFT JOIN Tag tag ON n.id = tag.id ' +
-            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 5 AND na.tagId IN (3)) AS TEXT) = 'hello');`
+            'SELECT n.id, n.spaceId, n.text, n.date ' +
+            'FROM Note n ' +
+            `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 1 AND na.tagId IN (1)) AS TEXT) = 'hello');`
         );
 });
