@@ -1,6 +1,6 @@
 {
   "name": "notu-sqlite",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "main": "dist/cjs/notu-sqlite.js",
   "module": "dist/esm/notu-sqlite.js",
   "unpkg": "dist/cjs/notu-sqlite.js",
