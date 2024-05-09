@@ -287,8 +287,14 @@ export class NotuSQLiteClient {
                         this._saveTag(note.ownTag, connection);
                     this._saveNoteTags(note.id, note.tags, connection);
                     this._deleteNoteTags(note.id, note.tagsPendingDeletion, connection);
-                    this._saveNoteAttrs(note.id, note.attrs, connection);
-                    this._deleteNoteAttrs(note.id, note.attrsPendingDeletion, connection);
+                    const allActiveNas = note.attrs;
+                    const allNasPendingDeletiong  = note.attrsPendingDeletion;
+                    for (const nt of note.tags) {
+                        allActiveNas.push(...nt.attrs);
+                        allNasPendingDeletiong.push(...nt.attrsPendingDeletion);
+                    }
+                    this._saveNoteAttrs(note.id, allActiveNas, connection);
+                    this._deleteNoteAttrs(note.id, allNasPendingDeletiong, connection);
                 }
             }
 
