@@ -11,6 +11,7 @@ const tag1 = newTag('Tag 1', 1).in(space1).clean();
 
 const dateAttr = newAttr('Date Attr', 1).in(space1).asDate().clean();
 const numberAttr = newAttr('Number Attr', 2).in(space1).asNumber().clean();
+const boolAttr = newAttr('Bool Attr', 3).in(space1).asBoolean().clean();
 
 
 export class MockConnection {
@@ -236,11 +237,31 @@ test('saveNote deletes attr if flagged for deletion', async () => {
     await client.saveNotes([note]);
 
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('DELETE FROM NoteAttr WHERE noteId = ? AND ((attrId = ? AND tagId = ?))');
+    expect(connection.history[1].command).toBe('DELETE FROM NoteAttr WHERE noteId = ? AND ((attrId = ? AND COALESCE(tagId, 0) = ?))');
     expect(connection.history[1].args[0]).toBe(note.id);
     expect(connection.history[1].args[1]).toBe(numberAttr.id);
-    expect(connection.history[1].args[2]).toBe(null);
+    expect(connection.history[1].args[2]).toBe(0);
     expect(connection.history.length).toBe(2);
+});
+
+test('saveNote correctly saves true boolean attr', async () => {
+    const connection = new MockConnection();
+    const client = new NotuSQLiteClient(
+        () => connection as any,
+        new NotuCache(testCacheFetcher() as any)
+    );
+    const note = newNote('test', 9).in(space1).clean().addAttr(boolAttr, false);
+    const na = note.getAttr(boolAttr).clean();
+    na.value = true;
+
+    await client.saveNotes([note]);
+
+    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
+    expect(connection.history[1].command).toBe('UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND COALESCE(tagId, 0) = ?;');
+    expect(connection.history[1].args[0]).toBe(1);
+    expect(connection.history[1].args[1]).toBe(note.id);
+    expect(connection.history[1].args[2]).toBe(boolAttr.id);
+    expect(connection.history[1].args[3]).toBe(0);
 });
 
 test('getNotes fetches notes in correct format', async () => {

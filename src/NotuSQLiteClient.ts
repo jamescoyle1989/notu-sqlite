@@ -368,8 +368,8 @@ export class NotuSQLiteClient {
         }
         for (const update of updates) {
             connection.run(
-                'UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND tagId = ?;',
-                this._convertAttrValueToDb(update), noteId, update.attr.id, update.tag?.id ?? null
+                'UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND COALESCE(tagId, 0) = ?;',
+                this._convertAttrValueToDb(update), noteId, update.attr.id, update.tag?.id ?? 0
             );
             update.clean();
         }
@@ -377,10 +377,10 @@ export class NotuSQLiteClient {
 
     private _deleteNoteAttrs(noteId: number, noteAttrsForDeletion: Array<NoteAttr>, connection: SQLiteConnection): void {
         if (noteAttrsForDeletion.length > 0) {
-            let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${noteAttrsForDeletion.map(x => '(attrId = ? AND tagId = ?)').join(' OR ')})`;
+            let command = `DELETE FROM NoteAttr WHERE noteId = ? AND (${noteAttrsForDeletion.map(x => '(attrId = ? AND COALESCE(tagId, 0) = ?)').join(' OR ')})`;
             let args = [noteId];
             for (const del of noteAttrsForDeletion)
-                args.push(del.attr.id, del.tag?.id ?? null);
+                args.push(del.attr.id, del.tag?.id ?? 0);
             connection.run(command, ...args);
         }
     }
