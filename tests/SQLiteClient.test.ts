@@ -124,6 +124,21 @@ test('saveSpace deletes space if flagged for deletion', async () => {
     expect(connection.history.length).toBe(2);
 });
 
+test('saveSpace returns json representation of saved space', async () => {
+    const connection = new MockConnection();
+    const client = new NotuSQLiteClient(
+        () => connection as any,
+        new NotuCache(testCacheFetcher() as any)
+    );
+    const space = newSpace('test', 87).dirty();
+
+    const spaceData = await client.saveSpace(space);
+
+    expect(spaceData.id).toBe(87);
+    expect(spaceData.name).toBe('test');
+    expect(spaceData).toEqual(space.toJSON());
+});
+
 
 test('saveAttr inserts new attr', async () => {
     const connection = new MockConnection();
@@ -172,6 +187,21 @@ test('saveAttr deletes attr if flagged for deletion', async () => {
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('DELETE FROM Attr WHERE id = ?;');
     expect(connection.history.length).toBe(2);
+});
+
+test('saveAttr returns json representation of saved attr', async () => {
+    const connection = new MockConnection();
+    const client = new NotuSQLiteClient(
+        () => connection as any,
+        new NotuCache(testCacheFetcher() as any)
+    );
+    const attr = newAttr('test', 45).in(space1).asNumber().dirty();
+
+    const attrData = await client.saveAttr(attr);
+
+    expect(attrData.id).toBe(45);
+    expect(attrData.name).toBe('test');
+    expect(attrData).toEqual(attr.toJSON());
 });
 
 

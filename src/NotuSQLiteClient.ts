@@ -136,7 +136,7 @@ export class NotuSQLiteClient {
                 );
             }
     
-            return Promise.resolve();
+            return Promise.resolve(space.toJSON());
         }
         finally {
             connection.close();
@@ -144,7 +144,7 @@ export class NotuSQLiteClient {
     }
 
 
-    saveAttr(attr: Attr): Promise<void> {
+    saveAttr(attr: Attr): Promise<any> {
         if (attr.isClean)
             return Promise.resolve();
 
@@ -174,7 +174,7 @@ export class NotuSQLiteClient {
                 );
             }
     
-            return Promise.resolve();
+            return Promise.resolve(attr.toJSON());
         }
         finally {
             connection.close();
