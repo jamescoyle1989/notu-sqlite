@@ -188,6 +188,21 @@ export class NotuSQLiteClient {
 
         query = this._prepareQuery(query, space).substring(query.indexOf(' FROM '));
 
+        return Promise.resolve(this._getNotesFromQuery(query));
+    }
+
+    getRelatedNotes(tag: Tag | Note | number): Promise<Array<any>> {
+        if (tag instanceof Tag)
+            tag = tag.id;
+        if (tag instanceof Note)
+            tag = tag.id;
+
+        const query = `SELECT n.id, n.spaceId, n.text, n.date FROM Note n INNER JOIN NoteTag nt ON nt.noteId = n.id WHERE nt.tagId = ${tag}`;
+
+        return Promise.resolve(this._getNotesFromQuery(query));
+    }
+
+    private _getNotesFromQuery(query: string): Array<any> {
         const connection = this._connectionFactory();
         try {
             const notesMap = new Map<number, any>();
@@ -234,7 +249,7 @@ export class NotuSQLiteClient {
                     note.attrs.push(na);
             });
 
-            return Promise.resolve(notes);
+            return notes;
         }
         finally {
             connection.close();
