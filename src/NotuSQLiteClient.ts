@@ -78,6 +78,7 @@ export class NotuSQLiteClient {
                         name TEXT NOT NULL,
                         description TEXT NOT NULL,
                         type INTEGER NOT NULL,
+                        color INTEGER NULL,
                         FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                     );`
                 );
@@ -153,16 +154,16 @@ export class NotuSQLiteClient {
             if (attr.isNew) {
                 this._enforceForeignKeys(connection);
                 attr.id = connection.run(
-                    'INSERT INTO Attr (spaceId, name, description, type) VALUES (?, ?, ?, ?);',
-                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type)
+                    'INSERT INTO Attr (spaceId, name, description, type, color) VALUES (?, ?, ?, ?, ?);',
+                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.getColorInt()
                 ).lastInsertRowid as number;
                 attr.clean();
             }
             else if (attr.isDirty) {
                 this._enforceForeignKeys(connection);
                 connection.run(
-                    'UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ? WHERE id = ?;',
-                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.id
+                    'UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ?, color = ? WHERE id = ?;',
+                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.getColorInt(), attr.id
                 );
                 attr.clean();
             }

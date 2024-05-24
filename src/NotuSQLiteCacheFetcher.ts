@@ -1,3 +1,4 @@
+import { Attr, Tag } from 'notu';
 import { SQLiteConnection } from './SQLiteConnection';
 import { mapAttrTypeFromDb } from './SQLMappings';
 
@@ -40,7 +41,7 @@ export class NotuSQLiteCacheFetcher {
                     id: x.id,
                     name: x.name,
                     spaceId: x.spaceId,
-                    color: x.color,
+                    color: Tag.getColorFromInt(x.color),
                     isPublic: x.isPublic
                 }))
             );
@@ -55,14 +56,15 @@ export class NotuSQLiteCacheFetcher {
         const connection = this._connectionFactory();
         try {
             return Promise.resolve(connection
-                .getAll('SELECT id, name, description, spaceId, type FROM Attr;')
+                .getAll('SELECT id, name, description, spaceId, type, color FROM Attr;')
                 .map(x => ({
                     state: 'CLEAN',
                     id: x.id,
                     name: x.name,
                     description: x.description,
                     type: mapAttrTypeFromDb(x.type),
-                    spaceId: x.spaceId
+                    spaceId: x.spaceId,
+                    color: Attr.getColorFromInt(x.color)
                 }))
             );
         }
