@@ -1,6 +1,5 @@
-import { Attr, Tag } from 'notu';
 import { SQLiteConnection } from './SQLiteConnection';
-import { mapAttrTypeFromDb } from './SQLMappings';
+import { mapAttrTypeFromDb, mapIntToColor } from './SQLMappings';
 
 
 export class NotuSQLiteCacheFetcher {
@@ -41,7 +40,7 @@ export class NotuSQLiteCacheFetcher {
                     id: x.id,
                     name: x.name,
                     spaceId: x.spaceId,
-                    color: Tag.getColorFromInt(x.color),
+                    color: mapIntToColor(x.color),
                     isPublic: x.isPublic
                 }))
             );
@@ -64,7 +63,7 @@ export class NotuSQLiteCacheFetcher {
                     description: x.description,
                     type: mapAttrTypeFromDb(x.type),
                     spaceId: x.spaceId,
-                    color: Attr.getColorFromInt(x.color)
+                    color: mapIntToColor(x.color)
                 }))
             );
         }

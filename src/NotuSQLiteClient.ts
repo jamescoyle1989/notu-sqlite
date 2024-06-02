@@ -1,4 +1,4 @@
-import { mapAttrTypeFromDb, mapAttrTypeToDb } from './SQLMappings';
+import { mapAttrTypeFromDb, mapAttrTypeToDb, mapColorToInt } from './SQLMappings';
 import { SQLiteConnection } from './SQLiteConnection';
 import { Attr, Note, NoteAttr, NoteTag, NotuCache, Space, Tag, parseQuery } from 'notu';
 import { buildNotesQuery } from './SQLiteQueryBuilder';
@@ -155,7 +155,7 @@ export class NotuSQLiteClient {
                 this._enforceForeignKeys(connection);
                 attr.id = connection.run(
                     'INSERT INTO Attr (spaceId, name, description, type, color) VALUES (?, ?, ?, ?, ?);',
-                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.getColorInt()
+                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), mapColorToInt(attr.color)
                 ).lastInsertRowid as number;
                 attr.clean();
             }
@@ -163,7 +163,7 @@ export class NotuSQLiteClient {
                 this._enforceForeignKeys(connection);
                 connection.run(
                     'UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ?, color = ? WHERE id = ?;',
-                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), attr.getColorInt(), attr.id
+                    attr.space.id, attr.name, attr.description, mapAttrTypeToDb(attr.type), mapColorToInt(attr.color), attr.id
                 );
                 attr.clean();
             }
@@ -326,14 +326,14 @@ export class NotuSQLiteClient {
         if (tag.isNew) {
             connection.run(
                 'INSERT INTO Tag (id, name, color, isPublic) VALUES (?, ?, ?, ?);',
-                tag.id, tag.name, tag.getColorInt(), tag.isPublic ? 1 : 0
+                tag.id, tag.name, mapColorToInt(tag.color), tag.isPublic ? 1 : 0
             );
             tag.clean();
         }
         else if (tag.isDirty) {
             connection.run(
                 'UPDATE Tag SET name = ?, color = ?, isPublic = ? WHERE id = ?;',
-                tag.name, tag.getColorInt(), tag.id, tag.isPublic ? 1 : 0
+                tag.name, mapColorToInt(tag.color), tag.id, tag.isPublic ? 1 : 0
             );
             tag.clean();
         }
