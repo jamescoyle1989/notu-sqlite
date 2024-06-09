@@ -5,7 +5,7 @@ export function buildNotesQuery(
     spaceId: number,
     cache: NotuCache
 ): string {
-    let output = 'SELECT n.id, n.spaceId, n.text, n.date FROM Note n';
+    let output = 'SELECT n.id, n.spaceId, n.text, n.date FROM Note n LEFT JOIN Tag t ON n.id = t.id';
     
     output += ` WHERE n.spaceId = ${spaceId}`
     if (!!parsedQuery.where)
