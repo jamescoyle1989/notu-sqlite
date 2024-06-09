@@ -1,4 +1,4 @@
-import { mapAttrTypeFromDb, mapAttrTypeToDb, mapColorToInt } from './SQLMappings';
+import { mapAttrTypeFromDb, mapAttrTypeToDb, mapColorToInt, mapDateToNumber, mapNumberToDate } from './SQLMappings';
 import { SQLiteConnection } from './SQLiteConnection';
 import { Attr, Note, NoteAttr, NoteTag, NotuCache, Space, Tag, parseQuery } from 'notu';
 import { buildNotesQuery } from './SQLiteQueryBuilder';
@@ -211,7 +211,7 @@ export class NotuSQLiteClient {
                 const note = {
                     state: 'CLEAN',
                     id: x.id,
-                    date: new Date(x.date * 1000),
+                    date: mapNumberToDate(x.date),
                     text: x.text,
                     spaceId: x.spaceId,
                     ownTag: null,
@@ -281,14 +281,14 @@ export class NotuSQLiteClient {
                 if (note.isNew) {
                     note.id = connection.run(
                         'INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);',
-                        Math.round(note.date.getTime() / 1000), note.text, note.space.id
+                        mapDateToNumber(note.date), note.text, note.space.id
                     ).lastInsertRowid as number;
                     note.clean();
                 }
                 else if (note.isDirty) {
                     connection.run(
                         'UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;',
-                        Math.round(note.date.getTime() / 1000), note.text, note.space.id, note.id
+                        mapDateToNumber(note.date), note.text, note.space.id, note.id
                     );
                     note.clean();
                 }
@@ -425,7 +425,7 @@ export class NotuSQLiteClient {
             const dateValue = new Date(noteAttr.value);
             if (!(noteAttr.value instanceof Date))
                 noteAttr.value = dateValue;
-            return Math.round(dateValue.getTime() / 1000);
+            return mapDateToNumber(dateValue);
         }
         return noteAttr.value;
     }
@@ -434,7 +434,7 @@ export class NotuSQLiteClient {
         if (attrType == 'BOOLEAN')
             return Number(value) > 0;
         if (attrType == 'DATE')
-            return new Date(Number(value) * 1000);
+            return mapNumberToDate(Number(value));
         if (attrType == 'NUMBER')
             return Number(value);
         return value;

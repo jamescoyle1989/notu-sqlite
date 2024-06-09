@@ -189,3 +189,75 @@ test('buildNotesQuery correctly processes query with attr condition on specific 
             `WHERE n.spaceId = 1 AND (CAST((SELECT na.value FROM NoteAttr na WHERE na.noteId = n.id AND na.attrId = 1 AND na.tagId IN (1)) AS TEXT) = 'hello');`
         );
 });
+
+test('buildNotesQuery can handle {Now}', async () => {
+    const query = new ParsedQuery();
+    query.where = 'date > {Now}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(date > \d+\);$/);
+});
+
+test('buildNotesQuery can handle {Today}', async () => {
+    const query = new ParsedQuery();
+    query.where = 'date > {Today}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(date > \d+\);$/);
+});
+
+test('buildNotesQuery can handle {Yesterday}', async () => {
+    const query = new ParsedQuery();
+    query.where = 'date > {Yesterday}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(date > \d+\);$/);
+});
+
+test('buildNotesQuery can handle {Tomorrow}', async () => {
+    const query = new ParsedQuery();
+    query.where = 'date > {Tomorrow}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(date > \d+\);$/);
+});
+
+test('buildNotesQuery can handle timespan range', async () => {
+    const query = new ParsedQuery();
+    query.where = '{0d 1:00}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(3600\);$/)
+});
+
+test('buildNotesQuery can handle timespan range 2', async () => {
+    const query = new ParsedQuery();
+    query.where = '{1d}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(86400\);$/)
+});
+
+test('buildNotesQuery can handle timespan range 3', async () => {
+    const query = new ParsedQuery();
+    query.where = '{1d 1:00:01}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+
+    expect(result).toMatch(/\(90001\);$/)
+});
+
+test('buildNotesQuery can handle date literal', async () => {
+    const query = new ParsedQuery();
+    query.where = '{2024/06/09 22:50:00}';
+
+    const result = buildNotesQuery(query, 1, await newNotuCache());
+    
+    expect(result).toMatch(/\(1717969800\);$/);
+});
