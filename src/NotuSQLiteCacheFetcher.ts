@@ -33,7 +33,7 @@ export class NotuSQLiteCacheFetcher {
     getTagsData(): Promise<Array<any>> {
         const connection = this._connectionFactory();
         try {
-            return Promise.resolve(connection
+            const tags = connection
                 .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.isPublic FROM Note n INNER JOIN Tag t ON n.id = t.id;')
                 .map(x => ({
                     state: 'CLEAN',
@@ -41,9 +41,16 @@ export class NotuSQLiteCacheFetcher {
                     name: x.name,
                     spaceId: x.spaceId,
                     color: mapIntToColor(x.color),
-                    isPublic: x.isPublic
-                }))
-            );
+                    isPublic: x.isPublic,
+                    links: []
+                }));
+            const tagsMap = new Map<number, any>();
+            for (const tag of tags)
+                tagsMap.set(tag.id, tag);
+            connection
+                .getAll('SELECT t.id AS fromId, nt.tagId AS toId FROM Tag t INNER JOIN NoteTag nt ON t.id = nt.noteId;')
+                .map(x => tagsMap.get(x.fromId).links.push(x.toId));
+            return Promise.resolve(tags);
         }
         finally {
             connection.close();
