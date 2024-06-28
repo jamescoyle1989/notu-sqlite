@@ -333,7 +333,7 @@ export class NotuSQLiteClient {
         else if (tag.isDirty) {
             connection.run(
                 'UPDATE Tag SET name = ?, color = ?, isPublic = ? WHERE id = ?;',
-                tag.name, mapColorToInt(tag.color), tag.id, tag.isPublic ? 1 : 0
+                tag.name, mapColorToInt(tag.color), tag.isPublic ? 1 : 0, tag.id
             );
             tag.clean();
         }
