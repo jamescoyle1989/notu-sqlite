@@ -19,8 +19,8 @@ export class NotuSQLiteClient {
     }
 
 
-    login(username: string, password: string): Promise<{error: string, token: string}> {
-        return Promise.resolve({error: null, token: '123.456.789'});
+    login(username: string, password: string): Promise<string> {
+        throw Error('Not implemented.');
     }
 
     setup(): Promise<void> {
