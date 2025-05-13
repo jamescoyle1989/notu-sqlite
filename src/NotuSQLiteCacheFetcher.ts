@@ -1,5 +1,5 @@
 import { SQLiteConnection } from './SQLiteConnection';
-import { mapAttrTypeFromDb, mapIntToColor } from './SQLMappings';
+import { mapIntToColor } from './SQLMappings';
 
 
 export class NotuSQLiteCacheFetcher {
@@ -15,12 +15,13 @@ export class NotuSQLiteCacheFetcher {
         const connection = this._connectionFactory();
         try {
             return Promise.resolve(connection
-                .getAll('SELECT id, name, version FROM Space;')
+                .getAll('SELECT id, name, version, useCommonSpace FROM Space;')
                 .map(x => ({
                     state: 'CLEAN',
                     id: x.id,
                     name: x.name,
-                    version: x.version
+                    version: x.version,
+                    useCommonSpace: x.useCommonSpace
                 }))
             );
         }
@@ -34,14 +35,14 @@ export class NotuSQLiteCacheFetcher {
         const connection = this._connectionFactory();
         try {
             const tags = connection
-                .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.isPublic FROM Note n INNER JOIN Tag t ON n.id = t.id;')
+                .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.availability FROM Note n INNER JOIN Tag t ON n.id = t.id;')
                 .map(x => ({
                     state: 'CLEAN',
                     id: x.id,
                     name: x.name,
                     spaceId: x.spaceId,
                     color: mapIntToColor(x.color),
-                    isPublic: x.isPublic,
+                    availability: x.availability,
                     links: []
                 }));
             const tagsMap = new Map<number, any>();
@@ -51,28 +52,6 @@ export class NotuSQLiteCacheFetcher {
                 .getAll('SELECT t.id AS fromId, nt.tagId AS toId FROM Tag t INNER JOIN NoteTag nt ON t.id = nt.noteId;')
                 .map(x => tagsMap.get(x.fromId).links.push(x.toId));
             return Promise.resolve(tags);
-        }
-        finally {
-            connection.close();
-        }
-    }
-
-
-    getAttrsData(): Promise<Array<any>> {
-        const connection = this._connectionFactory();
-        try {
-            return Promise.resolve(connection
-                .getAll('SELECT id, name, description, spaceId, type, color FROM Attr;')
-                .map(x => ({
-                    state: 'CLEAN',
-                    id: x.id,
-                    name: x.name,
-                    description: x.description,
-                    type: mapAttrTypeFromDb(x.type),
-                    spaceId: x.spaceId,
-                    color: mapIntToColor(x.color)
-                }))
-            );
         }
         finally {
             connection.close();

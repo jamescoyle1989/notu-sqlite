@@ -1,17 +1,14 @@
 import { expect, test } from 'vitest';
 import { NotuSQLiteClient } from '../src/NotuSQLiteClient';
 import BetterSqlite3 from 'better-sqlite3';
-import { Space, Attr, Note, Tag, NotuCache } from 'notu';
-import { newAttr, newNote, newSpace, newTag, testCacheFetcher } from './TestHelpers';
+import { Space, Note, Tag, NotuCache } from 'notu';
+import { newNote, newSpace, newTag, testCacheFetcher } from './TestHelpers';
+import { ISQLiteConnection } from '../src/SQLiteConnection';
 
 
 const space1 = newSpace('Space 1', 1).clean();
 
 const tag1 = newTag('Tag 1', 1).in(space1).clean();
-
-const dateAttr = newAttr('Date Attr', 1).in(space1).asDate().clean();
-const numberAttr = newAttr('Number Attr', 2).in(space1).asNumber().clean();
-const boolAttr = newAttr('Bool Attr', 3).in(space1).asBoolean().clean();
 
 
 export class MockConnection {
@@ -140,71 +137,6 @@ test('saveSpace returns json representation of saved space', async () => {
 });
 
 
-test('saveAttr inserts new attr', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 234 };
-    const attr = newAttr('test', 10).in(space1).asText().new();
-
-    await client.saveAttr(attr);
-
-    expect(attr.id).toBe(234);
-    expect(attr.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Attr (spaceId, name, description, type, color) VALUES (?, ?, ?, ?, ?);');
-    expect(connection.history.length).toBe(2);
-});
-
-test('saveAttr updates dirty attr', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    const attr = newAttr('test', 45).in(space1).asNumber().dirty();
-
-    await client.saveAttr(attr);
-
-    expect(attr.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('UPDATE Attr SET spaceId = ?, name = ?, description = ?, type = ?, color = ? WHERE id = ?;');
-    expect(connection.history.length).toBe(2);
-});
-
-test('saveAttr deletes attr if flagged for deletion', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    const attr = newAttr('test', 45).in(space1).asNumber().delete();
-
-    await client.saveAttr(attr);
-
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('DELETE FROM Attr WHERE id = ?;');
-    expect(connection.history.length).toBe(2);
-});
-
-test('saveAttr returns json representation of saved attr', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    const attr = newAttr('test', 45).in(space1).asNumber().dirty();
-
-    const attrData = await client.saveAttr(attr);
-
-    expect(attrData.id).toBe(45);
-    expect(attrData.name).toBe('test');
-    expect(attrData).toEqual(attr.toJSON());
-});
-
-
 test('saveNote inserts new note', async () => {
     const connection = new MockConnection();
     const client = new NotuSQLiteClient(
@@ -254,46 +186,6 @@ test('saveNote deletes note if flagged for deletion', async () => {
     expect(connection.history.length).toBe(2);
 });
 
-test('saveNote deletes attr if flagged for deletion', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    const note = newNote('test', 9).in(space1).addAttr(numberAttr, 25).clean();
-    note.getAttr(numberAttr).clean();
-    note.removeAttr(numberAttr);
-
-    await client.saveNotes([note]);
-
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('DELETE FROM NoteAttr WHERE noteId = ? AND ((attrId = ? AND COALESCE(tagId, 0) = ?))');
-    expect(connection.history[1].args[0]).toBe(note.id);
-    expect(connection.history[1].args[1]).toBe(numberAttr.id);
-    expect(connection.history[1].args[2]).toBe(0);
-    expect(connection.history.length).toBe(2);
-});
-
-test('saveNote correctly saves true boolean attr', async () => {
-    const connection = new MockConnection();
-    const client = new NotuSQLiteClient(
-        () => connection as any,
-        new NotuCache(testCacheFetcher() as any)
-    );
-    const note = newNote('test', 9).in(space1).clean().addAttr(boolAttr, false);
-    const na = note.getAttr(boolAttr).clean();
-    na.value = true;
-
-    await client.saveNotes([note]);
-
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('UPDATE NoteAttr SET value = ? WHERE noteId = ? AND attrId = ? AND COALESCE(tagId, 0) = ?;');
-    expect(connection.history[1].args[0]).toBe(1);
-    expect(connection.history[1].args[1]).toBe(note.id);
-    expect(connection.history[1].args[2]).toBe(boolAttr.id);
-    expect(connection.history[1].args[3]).toBe(0);
-});
-
 test('getNotes fetches notes in correct format', async () => {
     const connection = new MockConnection();
     const client = new NotuSQLiteClient(
@@ -321,7 +213,7 @@ test('saveNotes for new note sets noteId on tags & attrs', async () => {
         new NotuCache(testCacheFetcher() as any)
     );
     connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
-    const note = new Note('test').in(space1).addAttr(numberAttr, 987);
+    const note = new Note('test').in(space1);
     note.addTag(tag1);
 
     await client.saveNotes([note]);
@@ -332,25 +224,51 @@ test('saveNotes for new note sets noteId on tags & attrs', async () => {
     expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
     expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId) VALUES (?, ?)');
     expect(connection.history[2].args[0]).toBe(345);
-    expect(connection.history[3].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
-    expect(connection.history[3].args[0]).toBe(345);
-    expect(connection.history.length).toBe(4);
+    expect(connection.history.length).toBe(3);
 });
 
-test('saveNote with date attr handles if the value is formatted as a string', async () => {
+
+test('customJob throws error if name not implemented', async () => {
     const connection = new MockConnection();
     const client = new NotuSQLiteClient(
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
     );
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
-    const note = new Note('test').in(space1).addAttr(dateAttr, '1988-08-07T00:00:00.000Z');
+    try {
+        await client.customJob('abcde', null);
+        throw Error('Previous line should have thrown an error');
+    }
+    catch (err) {
+    }
+});
 
-    await client.saveNotes([note]);
+test('customJob runs raw SQL function', async () => {
+    const connection = new MockConnection();
+    const client = new NotuSQLiteClient(
+        () => connection as any,
+        new NotuCache(testCacheFetcher() as any)
+    );
+    const result = await client.customJob('Raw SQL', async (cnn: ISQLiteConnection) => {
+        await cnn.run('Get some data');
+        return 'abcde';
+    });
 
-    expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
-    expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
-    expect(connection.history[2].command).toBe('INSERT INTO NoteAttr (noteId, attrId, value, tagId) VALUES (?, ?, ?, ?)');
-    expect(connection.history[2].args[2]).toBe(new Date('1988-08-07T00:00:00.000Z').getTime() / 1000);
-    expect(note.attrs[0].value.getTime()).toBe(new Date('1988-08-07T00:00:00.000Z').getTime());
+    expect(connection.history.length).toBe(2);
+    expect(connection.history[0]).toBe('Get some data');
+    expect(connection.history[1]).toBe('CLOSED');
+    expect(result).toBe('abcde');
+});
+
+test('customJob runs raw SQL string', async () => {
+    const connection = new MockConnection();
+    const client = new NotuSQLiteClient(
+        () => connection as any,
+        new NotuCache(testCacheFetcher() as any)
+    );
+    const result = await client.customJob('Raw SQL', 'Get some data');
+
+    expect(connection.history.length).toBe(2);
+    expect(connection.history[0]).toBe('Get some data');
+    expect(connection.history[1]).toBe('CLOSED');
+    expect(result).toBe(1);
 });

@@ -1,10 +1,21 @@
 import BetterSqlite3 from 'better-sqlite3';
 
 
+export interface ISQLiteConnection {
+    run(command: string, ...args: Array<any>): BetterSqlite3.RunResult;
+
+    getFirst(query: string, ...args: Array<any>): any;
+
+    getAll(query: string, ...args: Array<any>): Array<any>;
+
+    close(): void;
+}
+
+
 /**
  * Provides thin wrapper around BetterSqlite3.Database
  */
-export class SQLiteConnection {
+export class SQLiteConnection implements ISQLiteConnection {
     private _internal: BetterSqlite3.Database;
     
     constructor(db: BetterSqlite3.Database) {
