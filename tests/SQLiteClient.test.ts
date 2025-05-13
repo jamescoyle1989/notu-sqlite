@@ -41,6 +41,7 @@ export class MockConnection {
 
     close(): void {
         this.isOpen = false;
+        this.history.push({type: 'closed', command: null, args: []});
     }
 }
 
@@ -70,7 +71,7 @@ test('setupSchema runs a bunch of commands if Note table doesnt exist', async ()
     const runHistory = connection.history.filter(x => x.type == 'run');
     expect(runHistory.length).toBeGreaterThan(0);
     expect(runHistory.find(x => x.command.startsWith('CREATE TABLE Note'))).toBeTruthy();
-    expect(runHistory.find(x => x.command.startsWith('CREATE TABLE NoteAttr'))).toBeTruthy();
+    expect(runHistory.find(x => x.command.startsWith('CREATE TABLE NoteTag'))).toBeTruthy();
 });
 
 
@@ -87,8 +88,9 @@ test('saveSpace inserts new space', async () => {
 
     expect(space.id).toBe(123);
     expect(space.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('INSERT INTO Space (name, version) VALUES (?, ?);');
-    expect(connection.history.length).toBe(1);
+    expect(connection.history[0].command).toBe('INSERT INTO Space (name, version, useCommonSpace) VALUES (?, ?, ?);');
+    expect(connection.history[1].type).toBe('closed');
+    expect(connection.history.length).toBe(2);
 });
 
 test('saveSpace updates space if dirty', async () => {
@@ -102,8 +104,9 @@ test('saveSpace updates space if dirty', async () => {
     await client.saveSpace(space);
 
     expect(space.isClean).toBe(true);
-    expect(connection.history[0].command).toBe('UPDATE Space SET name = ?, version = ? WHERE id = ?;');
-    expect(connection.history.length).toBe(1);
+    expect(connection.history[0].command).toBe('UPDATE Space SET name = ?, version = ?, useCommonSpace = ? WHERE id = ?;');
+    expect(connection.history[1].type).toBe('closed');
+    expect(connection.history.length).toBe(2);
 });
 
 test('saveSpace deletes space if flagged for deletion', async () => {
@@ -118,7 +121,8 @@ test('saveSpace deletes space if flagged for deletion', async () => {
 
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('DELETE FROM Space WHERE id = ?;');
-    expect(connection.history.length).toBe(2);
+    expect(connection.history[2].type).toBe('closed');
+    expect(connection.history.length).toBe(3);
 });
 
 test('saveSpace returns json representation of saved space', async () => {
@@ -152,7 +156,8 @@ test('saveNote inserts new note', async () => {
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
-    expect(connection.history.length).toBe(2);
+    expect(connection.history[2].type).toBe('closed');
+    expect(connection.history.length).toBe(3);
 });
 
 test('saveNote updates dirty note', async () => {
@@ -168,7 +173,8 @@ test('saveNote updates dirty note', async () => {
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;');
-    expect(connection.history.length).toBe(2);
+    expect(connection.history[2].type).toBe('closed');
+    expect(connection.history.length).toBe(3);
 });
 
 test('saveNote deletes note if flagged for deletion', async () => {
@@ -183,7 +189,8 @@ test('saveNote deletes note if flagged for deletion', async () => {
 
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('DELETE FROM Note WHERE id = ?;');
-    expect(connection.history.length).toBe(2);
+    expect(connection.history[2].type).toBe('closed');
+    expect(connection.history.length).toBe(3);
 });
 
 test('getNotes fetches notes in correct format', async () => {
@@ -206,7 +213,7 @@ test('getNotes fetches notes in correct format', async () => {
     expect(notes[0].date.getTime()).toBe(11708573979000);
 });
 
-test('saveNotes for new note sets noteId on tags & attrs', async () => {
+test('saveNotes for new note sets noteId on tags', async () => {
     const connection = new MockConnection();
     const client = new NotuSQLiteClient(
         () => connection as any,
@@ -222,9 +229,10 @@ test('saveNotes for new note sets noteId on tags & attrs', async () => {
     expect(note.isClean).toBe(true);
     expect(connection.history[0].command).toBe('PRAGMA foreign_keys = ON');
     expect(connection.history[1].command).toBe('INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);');
-    expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId) VALUES (?, ?)');
+    expect(connection.history[2].command).toBe('INSERT INTO NoteTag (noteId, tagId, data) VALUES (?, ?, ?)');
     expect(connection.history[2].args[0]).toBe(345);
-    expect(connection.history.length).toBe(3);
+    expect(connection.history[3].type).toBe('closed');
+    expect(connection.history.length).toBe(4);
 });
 
 
@@ -254,13 +262,14 @@ test('customJob runs raw SQL function', async () => {
     });
 
     expect(connection.history.length).toBe(2);
-    expect(connection.history[0]).toBe('Get some data');
-    expect(connection.history[1]).toBe('CLOSED');
+    expect(connection.history[0].command).toBe('Get some data');
+    expect(connection.history[1].type).toBe('closed');
     expect(result).toBe('abcde');
 });
 
 test('customJob runs raw SQL string', async () => {
     const connection = new MockConnection();
+    connection.nextRunOutput = { changes: 1, lastInsertRowid: 123 };
     const client = new NotuSQLiteClient(
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
@@ -268,7 +277,7 @@ test('customJob runs raw SQL string', async () => {
     const result = await client.customJob('Raw SQL', 'Get some data');
 
     expect(connection.history.length).toBe(2);
-    expect(connection.history[0]).toBe('Get some data');
-    expect(connection.history[1]).toBe('CLOSED');
-    expect(result).toBe(1);
+    expect(connection.history[0].command).toBe('Get some data');
+    expect(connection.history[1].type).toBe('closed');
+    expect(result.lastInsertRowid).toBe(123);
 });

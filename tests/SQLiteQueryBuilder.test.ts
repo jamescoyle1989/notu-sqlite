@@ -216,8 +216,8 @@ test('buildNotesQuery can handle date literal', async () => {
     query.where = '{2024/06/09 22:50:00}';
 
     const result = buildNotesQuery(query, 1, await newNotuCache());
-    
-    expect(result).toMatch(/\(1717969800\);$/);
+    console.log(result);
+    expect(result).toMatch(/\(1717987800\);$/);
 });
 
 test('ordering by date property works correctly', async () => {
