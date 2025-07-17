@@ -1,41 +1,40 @@
-import { SQLiteConnection } from './SQLiteConnection';
+import { ISQLiteConnection } from './SQLiteConnection';
 import { mapIntToColor } from './SQLMappings';
 
 
 export class NotuSQLiteCacheFetcher {
 
-    private _connectionFactory: () => SQLiteConnection;
+    private _connectionFactory: () => Promise<ISQLiteConnection>;
 
-    constructor(connectionFactory: () => SQLiteConnection) {
+    constructor(connectionFactory: () => Promise<ISQLiteConnection>) {
         this._connectionFactory = connectionFactory;
     }
 
 
-    getSpacesData(): Promise<Array<any>> {
-        const connection = this._connectionFactory();
+    async getSpacesData(): Promise<Array<any>> {
+        const connection = await this._connectionFactory();
         try {
-            return Promise.resolve(connection
-                .getAll('SELECT id, name, version, useCommonSpace FROM Space;')
+            return (await connection
+                .getAll('SELECT id, name, version, useCommonSpace FROM Space;'))
                 .map(x => ({
                     state: 'CLEAN',
                     id: x.id,
                     name: x.name,
                     version: x.version,
                     useCommonSpace: x.useCommonSpace
-                }))
-            );
+                }));
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
 
-    getTagsData(): Promise<Array<any>> {
-        const connection = this._connectionFactory();
+    async getTagsData(): Promise<Array<any>> {
+        const connection = await this._connectionFactory();
         try {
-            const tags = connection
-                .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.availability FROM Note n INNER JOIN Tag t ON n.id = t.id;')
+            const tags = (await connection
+                .getAll('SELECT n.id, t.name, n.spaceId, t.color, t.availability FROM Note n INNER JOIN Tag t ON n.id = t.id;'))
                 .map(x => ({
                     state: 'CLEAN',
                     id: x.id,
@@ -48,13 +47,13 @@ export class NotuSQLiteCacheFetcher {
             const tagsMap = new Map<number, any>();
             for (const tag of tags)
                 tagsMap.set(tag.id, tag);
-            connection
-                .getAll('SELECT t.id AS fromId, nt.tagId AS toId FROM Tag t INNER JOIN NoteTag nt ON t.id = nt.noteId;')
+            (await connection
+                .getAll('SELECT t.id AS fromId, nt.tagId AS toId FROM Tag t INNER JOIN NoteTag nt ON t.id = nt.noteId;'))
                 .map(x => tagsMap.get(x.fromId).links.push(x.toId));
             return Promise.resolve(tags);
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 }

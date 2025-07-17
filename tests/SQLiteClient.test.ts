@@ -1,9 +1,8 @@
 import { expect, test } from 'vitest';
 import { NotuSQLiteClient } from '../src/NotuSQLiteClient';
-import BetterSqlite3 from 'better-sqlite3';
-import { Space, Note, Tag, NotuCache } from 'notu';
+import { Space, Note, NotuCache } from 'notu';
 import { newNote, newSpace, newTag, testCacheFetcher } from './TestHelpers';
-import { ISQLiteConnection } from '../src/SQLiteConnection';
+import { ISQLiteConnection, RunResult } from '../src/SQLiteConnection';
 
 
 const space1 = newSpace('Space 1', 1).clean();
@@ -15,33 +14,34 @@ export class MockConnection {
     history: Array<{type: string, command: string, args: Array<any>}> = [];
     isOpen: boolean = true;
 
-    nextRunOutput: BetterSqlite3.RunResult;
+    nextRunOutput: RunResult;
     nextGetFirstOutput: any = null;
     nextGetAllOutput: Array<any>;
 
     onGetAll: (query: string) => void;
     
-    run(command: string, ...args: Array<any>): BetterSqlite3.RunResult {
+    run(command: string, ...args: Array<any>): Promise<RunResult> {
         this.history.push({type: 'run', command, args});
-        return this.nextRunOutput;
+        return Promise.resolve(this.nextRunOutput);
     }
 
-    getFirst(query: string, ...args: Array<any>): any {
+    getFirst(query: string, ...args: Array<any>): Promise<any> {
         this.history.push({type: 'getFirst', command: query, args});
-        return this.nextGetFirstOutput;
+        return Promise.resolve(this.nextGetFirstOutput);
     }
 
-    getAll(query: string, ...args: Array<any>): Array<any> {
+    getAll(query: string, ...args: Array<any>): Promise<Array<any>> {
         this.history.push({type: 'getAll', command: query, args});
         const output = this.nextGetAllOutput;
         if (!!this.onGetAll)
             this.onGetAll(query);
-        return output;
+        return Promise.resolve(output);
     }
 
-    close(): void {
+    close(): Promise<void> {
         this.isOpen = false;
         this.history.push({type: 'closed', command: null, args: []});
+        return Promise.resolve();
     }
 }
 
@@ -81,7 +81,7 @@ test('saveSpace inserts new space', async () => {
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
     );
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 123 };
+    connection.nextRunOutput = { changes: 1, lastInsertRowId: 123 };
     const space = new Space('test');
     
     await client.saveSpace(space);
@@ -147,7 +147,7 @@ test('saveNote inserts new note', async () => {
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
     );
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
+    connection.nextRunOutput = { changes: 1, lastInsertRowId: 345 };
     const note = new Note('test').in(space1);
 
     await client.saveNotes([note]);
@@ -219,7 +219,7 @@ test('saveNotes for new note sets noteId on tags', async () => {
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
     );
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 345 };
+    connection.nextRunOutput = { changes: 1, lastInsertRowId: 345 };
     const note = new Note('test').in(space1);
     note.addTag(tag1);
 
@@ -269,7 +269,7 @@ test('customJob runs raw SQL function', async () => {
 
 test('customJob runs raw SQL string', async () => {
     const connection = new MockConnection();
-    connection.nextRunOutput = { changes: 1, lastInsertRowid: 123 };
+    connection.nextRunOutput = { changes: 1, lastInsertRowId: 123 };
     const client = new NotuSQLiteClient(
         () => connection as any,
         new NotuCache(testCacheFetcher() as any)
@@ -279,5 +279,5 @@ test('customJob runs raw SQL string', async () => {
     expect(connection.history.length).toBe(2);
     expect(connection.history[0].command).toBe('Get some data');
     expect(connection.history[1].type).toBe('closed');
-    expect(result.lastInsertRowid).toBe(123);
+    expect(result.lastInsertRowId).toBe(123);
 });

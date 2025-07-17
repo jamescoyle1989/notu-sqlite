@@ -1,5 +1,5 @@
 import { mapColorToInt, mapDateToNumber, mapNumberToDate } from './SQLMappings';
-import { SQLiteConnection } from './SQLiteConnection';
+import { ISQLiteConnection } from './SQLiteConnection';
 import { Note, NoteTag, NotuCache, Space, Tag, parseQuery } from 'notu';
 import { buildNotesQuery } from './SQLiteQueryBuilder';
 
@@ -9,11 +9,11 @@ import { buildNotesQuery } from './SQLiteQueryBuilder';
  */
 export class NotuSQLiteClient {
 
-    private _connectionFactory: () => SQLiteConnection;
+    private _connectionFactory: () => Promise<ISQLiteConnection>;
     
     private _cache: NotuCache;
 
-    constructor(connectionFactory: () => SQLiteConnection, cache: NotuCache) {
+    constructor(connectionFactory: () => Promise<ISQLiteConnection>, cache: NotuCache) {
         this._connectionFactory = connectionFactory;
         this._cache = cache;
     }
@@ -23,11 +23,11 @@ export class NotuSQLiteClient {
         throw Error('Not implemented.');
     }
 
-    setup(): Promise<void> {
-        const connection = this._connectionFactory();
+    async setup(): Promise<void> {
+        const connection = await this._connectionFactory();
         try {
-            if (!connection.getFirst(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Note';`)) {
-                connection.run(
+            if (!(await connection.getFirst(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Note';`))) {
+                await connection.run(
                     `CREATE TABLE Space (
                         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
@@ -36,7 +36,7 @@ export class NotuSQLiteClient {
                     )`
                 );
                 
-                connection.run(
+                await connection.run(
                     `CREATE TABLE Note (
                         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         spaceId INTEGER NOT NULL,
@@ -45,10 +45,10 @@ export class NotuSQLiteClient {
                         FOREIGN KEY (spaceId) REFERENCES Space(id) ON DELETE CASCADE
                     );`
                 );
-                connection.run(`CREATE INDEX Note_spaceId ON Note(spaceId);`);
-                connection.run(`CREATE INDEX Note_date ON Note(date);`);
+                await connection.run(`CREATE INDEX Note_spaceId ON Note(spaceId);`);
+                await connection.run(`CREATE INDEX Note_date ON Note(date);`);
     
-                connection.run(
+                await connection.run(
                     `CREATE TABLE Tag (
                         id INTEGER NOT NULL,
                         name TEXT NOT NULL,
@@ -58,9 +58,9 @@ export class NotuSQLiteClient {
                         FOREIGN KEY (id) REFERENCES Note(id) ON DELETE CASCADE
                     );`
                 );
-                connection.run(`CREATE INDEX Tag_id ON Tag(id);`);
+                await connection.run(`CREATE INDEX Tag_id ON Tag(id);`);
     
-                connection.run(
+                await connection.run(
                     `CREATE TABLE NoteTag (
                         noteId INTEGER NOT NULL,
                         tagId INTEGER NOT NULL,
@@ -70,41 +70,39 @@ export class NotuSQLiteClient {
                         FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
                     );`
                 );
-                connection.run(`CREATE INDEX NoteTag_noteId ON NoteTag(noteId);`);
-                connection.run(`CREATE INDEX NoteTag_tagId ON NoteTag(tagId);`);
+                await connection.run(`CREATE INDEX NoteTag_noteId ON NoteTag(noteId);`);
+                await connection.run(`CREATE INDEX NoteTag_tagId ON NoteTag(tagId);`);
             }
-    
-            return Promise.resolve();
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
 
-    saveSpace(space: Space): Promise<any> {
+    async saveSpace(space: Space): Promise<any> {
         if (space.isClean)
             return Promise.resolve();
 
-        const connection = this._connectionFactory();
+        const connection = await this._connectionFactory();
         try {
             if (space.isNew) {
-                space.id = connection.run(
+                space.id = (await connection.run(
                     'INSERT INTO Space (name, version, useCommonSpace) VALUES (?, ?, ?);',
                     space.name, space.version, space.useCommonSpace ? 1 : 0
-                ).lastInsertRowid as number;
+                )).lastInsertRowId as number;
                 space.clean();
             }
             else if (space.isDirty) {
-                connection.run(
+                await connection.run(
                     'UPDATE Space SET name = ?, version = ?, useCommonSpace = ? WHERE id = ?;',
                     space.name, space.version, space.useCommonSpace ? 1 : 0, space.id
                 );
                 space.clean();
             }
             else if (space.isDeleted) {
-                this._enforceForeignKeys(connection);
-                connection.run(
+                await this._enforceForeignKeys(connection);
+                await connection.run(
                     'DELETE FROM Space WHERE id = ?;',
                     space.id
                 );
@@ -113,25 +111,25 @@ export class NotuSQLiteClient {
             return Promise.resolve(space.toJSON());
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
 
-    getNotes(query: string, space?: number | Space): Promise<Array<any>> {
+    async getNotes(query: string, space?: number | Space): Promise<Array<any>> {
         if (space instanceof Space)
             space = space.id;
 
         query = this._prepareQuery(query, space);
 
-        return Promise.resolve(this._getNotesFromQuery(query));
+        return await this._getNotesFromQuery(query);
     }
 
-    private _getNotesFromQuery(query: string): Array<any> {
-        const connection = this._connectionFactory();
+    private async _getNotesFromQuery(query: string): Promise<Array<any>> {
+        const connection = await this._connectionFactory();
         try {
             const notesMap = new Map<number, any>();
-            const notes = connection.getAll(query).map(x => {
+            const notes = (await connection.getAll(query)).map(x => {
                 const note = {
                     state: 'CLEAN',
                     id: x.id,
@@ -147,7 +145,7 @@ export class NotuSQLiteClient {
 
             if (notes.length > 0) {
                 const noteTagsSQL = `SELECT noteId, tagId, data FROM NoteTag WHERE noteId IN (${notes.map(n => n.id).join(',')});`;
-                connection.getAll(noteTagsSQL).map(x => {
+                (await connection.getAll(noteTagsSQL)).map(x => {
                     const nt = {
                         state: 'CLEAN',
                         tagId: x.tagId,
@@ -161,47 +159,47 @@ export class NotuSQLiteClient {
             return notes;
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
-    getNoteCount(query: string, space: number | Space): Promise<number> {
+    async getNoteCount(query: string, space: number | Space): Promise<number> {
         if (space instanceof Space)
             space = space.id;
 
         query = 'SELECT COUNT(*) AS cnt' + this._prepareQuery(query, space).substring(query.indexOf(' FROM '));
 
-        const connection = this._connectionFactory();
+        const connection = await this._connectionFactory();
         try {
-            return Promise.resolve(connection.getFirst(query).cnt);
+            return (await connection.getFirst(query)).cnt;
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
 
-    saveNotes(notes: Array<Note>): Promise<Array<any>> {
-        const connection = this._connectionFactory();
-        this._enforceForeignKeys(connection);
+    async saveNotes(notes: Array<Note>): Promise<Array<any>> {
+        const connection = await this._connectionFactory();
+        await this._enforceForeignKeys(connection);
         try {
             for (const note of notes) {
                 if (note.isNew) {
-                    note.id = connection.run(
+                    note.id = (await connection.run(
                         'INSERT INTO Note (date, text, spaceId) VALUES (?, ?, ?);',
                         mapDateToNumber(note.date), note.text, note.space.id
-                    ).lastInsertRowid as number;
+                    )).lastInsertRowId as number;
                     note.clean();
                 }
                 else if (note.isDirty) {
-                    connection.run(
+                    await connection.run(
                         'UPDATE Note SET date = ?, text = ?, spaceId = ? WHERE id = ?;',
                         mapDateToNumber(note.date), note.text, note.space.id, note.id
                     );
                     note.clean();
                 }
                 else if (note.isDeleted) {
-                    connection.run(
+                    await connection.run(
                         'DELETE FROM Note WHERE id = ?;',
                         note.id
                     );
@@ -217,28 +215,28 @@ export class NotuSQLiteClient {
             return Promise.resolve(notes.map(n => n.toJSON()))
         }
         finally {
-            connection.close();
+            await connection.close();
         }
     }
 
 
-    private _saveTag(tag: Tag, connection: SQLiteConnection): void {
+    private async _saveTag(tag: Tag, connection: ISQLiteConnection): Promise<void> {
         if (tag.isNew) {
-            connection.run(
+            await connection.run(
                 'INSERT INTO Tag (id, name, color, availability) VALUES (?, ?, ?, ?);',
                 tag.id, tag.name, mapColorToInt(tag.color), tag.availability
             );
             tag.clean();
         }
         else if (tag.isDirty) {
-            connection.run(
+            await connection.run(
                 'UPDATE Tag SET name = ?, color = ?, isPublic = ? WHERE id = ?;',
                 tag.name, mapColorToInt(tag.color), tag.availability, tag.id
             );
             tag.clean();
         }
         else if (tag.isDeleted) {
-            connection.run(
+            await connection.run(
                 'DELETE Tag WHERE id = ?',
                 tag.id
             );
@@ -246,7 +244,7 @@ export class NotuSQLiteClient {
     }
 
 
-    private _saveNoteTags(noteId: number, noteTags: Array<NoteTag>, connection: SQLiteConnection): void {
+    private async _saveNoteTags(noteId: number, noteTags: Array<NoteTag>, connection: ISQLiteConnection): Promise<void> {
         const inserts = noteTags.filter(x => x.isNew);
         const updates = noteTags.filter(x => x.isDirty);
 
@@ -257,10 +255,10 @@ export class NotuSQLiteClient {
                 args.push(noteId, insert.tag.id, !!insert.data ? JSON.stringify(insert.data) : null);
                 insert.clean();
             }
-            connection.run(command, ...args);
+            await connection.run(command, ...args);
         }
         for (const update of updates) {
-            connection.run(
+            await connection.run(
                 'UPDATE NoteTag SET data = ? WHERE noteId = ? AND tagId = ?;',
                 !!update.data ? JSON.stringify(update.data) : null, noteId, update.tag.id
             );
@@ -268,26 +266,26 @@ export class NotuSQLiteClient {
         }
     }
 
-    private _deleteNoteTags(noteId: number, noteTagsPendingDeletion: Array<NoteTag>, connection: SQLiteConnection): void {
+    private async _deleteNoteTags(noteId: number, noteTagsPendingDeletion: Array<NoteTag>, connection: ISQLiteConnection): Promise<void> {
         if (noteTagsPendingDeletion.length > 0) {
             let command = `DELETE FROM NoteTag WHERE noteId = ? AND tagId IN (${noteTagsPendingDeletion.map(x => x.tag.id).join(', ')})`;
             let args = [noteId];
-            connection.run(command, ...args);
+            await connection.run(command, ...args);
         }
     }
 
 
     async customJob(name: string, data: any): Promise<any> {
         if (name == 'Raw SQL') {
-            const connection = this._connectionFactory();
+            const connection = await this._connectionFactory();
             try {
                 if (typeof(data) == 'string')
-                    return Promise.resolve(connection.run(data));
+                    return await connection.run(data);
                 else if (typeof(data) == 'function')
                     return await data(connection);
             }
             finally {
-                connection.close();
+                await connection.close();
             }
         }
         throw Error(`Unrecognised custom job '${name}'`);
@@ -301,7 +299,7 @@ export class NotuSQLiteClient {
     }
 
 
-    private _enforceForeignKeys(connection: SQLiteConnection): void {
-        connection.run('PRAGMA foreign_keys = ON');
+    private async _enforceForeignKeys(connection: ISQLiteConnection): Promise<void> {
+        await connection.run('PRAGMA foreign_keys = ON');
     }
 }
