@@ -1,6 +1,6 @@
 {
   "name": "notu-sqlite",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "main": "dist/cjs/notu-sqlite.js",
   "module": "dist/esm/notu-sqlite.js",
   "unpkg": "dist/cjs/notu-sqlite.js",
@@ -35,9 +35,6 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vitest": "^0.34.6"
-  },
-  "dependencies": {
-    "jose": "^6.0.12"
   },
   "peerDependencies": {
     "better-sqlite3": "^8.7.0",
